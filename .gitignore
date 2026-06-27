@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Data — keep the code, not the (re)generatable datasets
+# Comment a line out if you DO want to share that data with the team
+realdata/
+*.kronos.csv
+spy.csv
+qqq.csv
+iwm.csv
+
+# OS / editor junk
+.DS_Store
+.obsidian/
+*.swp
