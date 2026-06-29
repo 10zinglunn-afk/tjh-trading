@@ -14,6 +14,9 @@ spy.csv
 qqq.csv
 iwm.csv
 
+# Generated outputs — regenerate with `python3 dashboard.py`
+dashboard.html
+
 # OS / editor junk
 .DS_Store
 .obsidian/

@@ -84,3 +84,17 @@ wikilinks) covering 3 of the 8 sources. The `.py` files remain **canonical** —
 change logic in a `.py`, update its note's code block to match. The notes also wikilink
 to `[[Strategies]]`, `[[Metrics]]`, `[[Data]]`, `[[Walkforward]]`, which don't have notes
 yet (they show as unresolved links — fine in Obsidian, and a marker for notes worth adding).
+
+## Planning layer (living knowledge base) — start here for project direction
+`PROJECT_PLAN.md` is the front door (Map of Content). The `.py` files are still canonical
+for *engine logic*; the plan layer is canonical for *project direction, roles, and decisions*.
+- `plan/` — 00-vision, 01-decision-log, 02-verdict-log, 03-roadmap, 04-glossary, 05-risk-register
+- `roles/` — ROLE_Tenzing/Jonathan/Henry, standup-template (update routine), log-<name>
+- `research/` — _thesis-template.md + theses/
+- `webapp/` — SPEC.md (prediction-vs-actual + pay-per-trade visualizer), options-modeling.md
+
+Standing decisions live in `plan/01-decision-log.md` (e.g. options are PAPER-ONLY until a
+strategy survives walk-forward OOS net of costs in the 300/50 bps regime; current focus is
+the visualizer web app + a real Kronos run). **Maintenance rule:** when a work session
+changes a decision/role/roadmap, update the relevant plan file the same session and keep
+Claude's memory in sync.

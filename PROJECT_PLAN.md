@@ -1,0 +1,69 @@
+# 🧭 Algo-Trading Club — Home (Map of Content)
+
+*This is the front door. It links to everything. Start here when you sit down to work.*
+*Three of us (Tenzing, Jonathan, Henry), ~$3–5k of our own money. Two equal goals: learn
+enough to put real work on our résumés, and grow the money without doing anything stupid.*
+
+Last touched: 2026-06-27.
+
+---
+
+## ⛔ The non-negotiables (read every time — these override enthusiasm)
+
+1. **A strategy is only real if it beats buy-and-hold AND random, out-of-sample, after
+   costs.** The only number that isn't lying is the OOS walk-forward row, net of `costs.py`,
+   on **real** data. Everything else is diagnosis.
+2. **Money is separate from software.** Capital stays indexed or paper-traded until a
+   strategy clears #1. We build the algo; we don't *fund* it on hope.
+3. **Options are paper-only for now.** We model and visualize options (see [[webapp/SPEC]]),
+   but no real options money until a strategy survives #1 *in the cheap-option cost regime*.
+   Our own harness sends naive options strategies to ~−100%. Respect that.
+4. **No outside money, ever, in the current structure.** We're an investment club (the three
+   of us, our own money, equal say). The Fordham-club ambition is *education/research*, not
+   pooling strangers' capital. See [[plan/00-vision]].
+5. **Honesty is the asset.** "We tested 10 things and 9 had no edge" is a *stronger* résumé
+   and a better club than one fake winner. The logs do not get edited to flatter us.
+
+---
+
+## 🗂️ The knowledge base
+
+### plan/ — the thinking
+- [[plan/00-vision]] — north star, the Fordham-club endgame, principles, résumé payoff
+- [[plan/01-decision-log]] — every meaningful/irreversible decision, with the *why*. **Keep current.**
+- [[plan/02-verdict-log]] — the research track record: what we tested, OOS-net-of-costs vs SPY. **The asset.**
+- [[plan/03-roadmap]] — Now / Next / Later (no dates — we move as fast as we can)
+- [[plan/04-glossary]] — terms (OOS, walk-forward, theta, IV, Greeks…) so nobody's lost
+- [[plan/05-risk-register]] — what could blow us up (legal, capital, model self-deception)
+
+### roles/ — who does what
+- [[roles/ROLE_Tenzing]] — engineering / the machine
+- [[roles/ROLE_Jonathan]] — strategy & risk / the offense
+- [[roles/ROLE_Henry]] — costs, execution & measurement / the reality check
+- [[roles/standup-template]] — the recurring update routine (copy per work cycle)
+- [[roles/log-Tenzing]] · [[roles/log-Jonathan]] · [[roles/log-Henry]] — rolling personal logs
+
+### research/ — the ideas
+- [[research/_thesis-template]] — copy this for every strategy idea
+- `research/theses/` — one file per hypothesis we test
+
+### webapp/ — what we're building
+- [[webapp/SPEC]] — the prediction-vs-actual + cost-simulation visualizer
+- [[webapp/options-modeling]] — how we model options honestly, and what we're missing
+
+### The machine (canonical source of truth)
+The `.py` files (`costs.py`, `backtest.py`, `walkforward.py`, `strategies.py`, `data.py`,
+`forecast_kronos.py`, `run.py`) + Obsidian notes [[Backtest]], [[Costs]], [[Run]].
+See the repo `CLAUDE.md` for how the engine works and its invariants.
+
+---
+
+## 🔁 How this doc stays alive
+This is a *living* plan. The rule: **when a work session changes a decision, a role, or the
+roadmap, it gets written down the same session** — in [[plan/01-decision-log]] and the
+affected file — and Claude updates its cloud memory so the next session starts current.
+Stale plan = dead plan.
+
+## ▶️ Current focus
+Building the **options/equity visualizer web app** ([[webapp/SPEC]]) and running **Kronos for
+real** on the six tickers. See [[plan/03-roadmap]] → Now.
