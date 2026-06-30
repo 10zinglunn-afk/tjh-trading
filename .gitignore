@@ -17,6 +17,18 @@ iwm.csv
 # Generated outputs — regenerate with `python3 dashboard.py`
 dashboard.html
 
+# Web-app exports — regenerate with `python3 export_results.py [csv]`.
+# Real-ticker exports embed Yahoo price series (redistribution-restricted), so
+# they stay local. The synthetic export is public-safe and can be force-added
+# later when the web app needs a bundled demo (git add -f exports/synthetic.results.json).
+exports/
+
+# Live-fetched ticker cache (yfinance writes here) — vendor data, regenerate on demand.
+data_cache/
+
+# Per-machine Claude Code permission allowlist (keep launch.json, drop the local one).
+.claude/settings.local.json
+
 # OS / editor junk
 .DS_Store
 .obsidian/

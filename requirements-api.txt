@@ -1,0 +1,6 @@
+# Backend API (api_server.py) — wraps the harness as an HTTP service.
+pandas>=2.0
+numpy>=1.24
+fastapi>=0.110
+uvicorn[standard]>=0.27
+yfinance>=0.2     # live "any ticker" fetch; without it, only local/synthetic tickers work

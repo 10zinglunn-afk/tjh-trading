@@ -12,22 +12,29 @@ work is worthless — so your bar is correctness, not cleverness.
   `data.py`, `forecast_kronos.py`, `run.py`).
 - Data integrity (clean real data, no lookahead, no junk rows).
 - Turning Jonathan's strategy theses into actual signal functions and running them.
-- The dashboard that makes results legible to non-coders.
+- The deployed web app that makes results legible to non-coders.
+- The engineering roadmap in [[plan/06-engineering-plan]].
 
 ## Deliverables (in order, no dates — just sequence)
+See [[plan/06-engineering-plan]] for the full coding roadmap. The next 1-2 months optimize
+for a deployed web app, not a perfect research platform.
+
 1. **Clean the data.** Remove pre-IPO flat-padded rows from `realdata/nio.csv` and
-   `realdata/sofi.csv`; delete the throwaway `tqqq.kronos.csv` mock. Don't let dirty data
-   produce fake edges.
-2. **Run Kronos for real.** Locally, not `--mock`, on all six tickers. Read the
-   OOS-net-of-costs walk-forward row. Write the result in the verdict log even if (likely)
-   it's "no edge on daily bars."
-3. **Implement each strategy thesis Jonathan hands you** as a function
-   `(prices, **kw) -> position Series in [-1,1]`. It must clear the same OOS-net-of-costs
-   bar as everything else. No special pleading.
-4. **Build the dashboard.** Read-only web app: results table, equity curves, cost regimes,
-   live quotes via the Robinhood MCP *for display only*. This is your portfolio centerpiece
-   and where your Supabase + Vercel learning lands.
-5. **Fill the missing Obsidian notes:** [[Strategies]], [[Metrics]], [[Data]],
+   `realdata/sofi.csv`; remove or quarantine throwaway/mock Kronos outputs. Don't let dirty
+   data produce fake edges.
+2. **Export harness truth for the app.** Build a reproducible Python `results.json` export:
+   prices, positions, trades, cost-regime metrics, OOS metrics, and data-quality warnings.
+3. **Build and deploy the web app v1.** Read-only app: ticker picker, strategy picker, price
+   chart, signal overlay, trade markers, net equity curve vs buy-and-hold, and verdict panel.
+   This is the portfolio centerpiece and where your Vercel learning lands.
+4. **Make the app interview-strong.** Add README/demo flow, architecture explanation,
+   no-lookahead explanation, and public-safe sample results.
+5. **Run Kronos for real.** Locally, not `--mock`, on all six tickers. Read the
+   OOS-net-of-costs walk-forward row and write the result in the verdict log. This informs
+   the research story but does not block app v1.
+6. **Implement accepted strategy theses.** When Jonathan hands you a real thesis, turn it
+   into `(prices, **kw) -> position Series in [-1,1]`, run it, and verdict-log it.
+7. **Fill the missing Obsidian notes:** [[Strategies]], [[Metrics]], [[Data]],
    [[Walkforward]] (currently unresolved wikilinks). Keeps the `.py` ↔ notes in sync.
 
 ## How your work is graded (be harsh with yourself)
@@ -47,7 +54,7 @@ and system design — keeping the harness modular as strategies pile up.
 - **From Jonathan:** a written thesis + sizing rules → you turn it into a signal + run it.
 - **From Henry:** the real cost numbers per instrument → you plug them into `costs.py`'s
   regimes so the verdict reflects reality, not a guess.
-- **To both:** the dashboard + verdict log, so non-coders can see what survived.
+- **To both:** the deployed app + verdict log, so non-coders can see what survived.
 
 ## The trap for you specifically
 You can build anything, so you'll be tempted to add features (more signals, fancier model,

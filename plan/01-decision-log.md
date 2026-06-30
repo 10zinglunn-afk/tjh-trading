@@ -8,6 +8,19 @@ When a decision changes, add a NEW entry that supersedes the old one (don't dele
 
 ---
 
+### 2026-06-29 — Web app v1 = Next.js front end + a Python harness API (run on demand)
+**Decision:** Build the visualizer as two services: a Next.js/Vercel front end and a FastAPI
+backend (`api_server.py`) that runs the canonical harness on demand, so users can pick any
+ticker and tweak cost assumptions live and see the result recomputed. The API reuses the exact
+`export_results` code path the CLI uses, so the app and the offline numbers cannot drift.
+**Why:** Chose the "fully done" architecture over a quick static bundle — live ticker choice +
+cost tweaking is the whole point of the teaching tool, and the backend is real system-design
+reps (Tenzing's learning goal). Trade-off acknowledged: more infra than a static site, so we
+guard against scope creep (risk register) by shipping a working vertical slice first.
+**Guardrails:** Python produces truth; no backtest math in JS; no order execution; vendor
+price data stays out of public commits. Supersedes the implicit "static, no backend" framing.
+**Who:** Tenzing (chose B over a static-only v1).
+
 ### 2026-06-27 — Options are paper-only until proven in the cheap-option cost regime
 **Decision:** We may *model and visualize* options in the web app, but no real capital goes
 into options until a strategy survives walk-forward OOS net of costs in the 300/50 bps

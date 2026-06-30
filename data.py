@@ -23,7 +23,49 @@ def synthetic_ohlcv(n=1500, seed=7, kappa=0.0, sigma=0.012, drift=0.0,
     return pd.DataFrame({'open':openp,'high':high,'low':low,'close':close,'volume':vol})
 
 
-def load_csv(path):
+def load_csv(path, warn=True):
+    """Load an OHLCV CSV and trim leading PRE-IPO PADDING.
+
+    Some vendors back-pad a ticker's history to a fixed start date with flat,
+    zero-volume rows (e.g. nio/sofi sit at a constant price with volume=0 for
+    months before they actually listed). Those rows are not market data: a
+    mean-reversion strategy reads the dead-flat price as a stable mean and
+    fabricates an edge. We drop the leading run of zero-volume rows so the
+    series begins at the first real trading bar. Only the *leading* block is
+    trimmed -- a genuine zero-volume bar later in the series is left alone."""
     df = pd.read_csv(path, parse_dates=[0], index_col=0)
     df.columns = [c.lower() for c in df.columns]
+    if 'volume' in df.columns:
+        traded = (df['volume'] > 0).values
+        if traded.any() and not traded[0]:
+            first = int(traded.argmax())            # index of first real trading bar
+            if warn:
+                print(f"[data] {path}: trimmed {first} leading pre-IPO/zero-volume rows "
+                      f"({df.index[0].date()} -> {df.index[first].date()})")
+            df = df.iloc[first:]
     return df
+
+
+def quality_report(path):
+    """Inspect a raw OHLCV CSV and return a list of data-quality warnings as
+    plain dicts (so the web app can surface them honestly). Reads the RAW file,
+    not the trimmed one, so it can report what load_csv silently cleaned."""
+    raw = pd.read_csv(path, parse_dates=[0], index_col=0)
+    raw.columns = [c.lower() for c in raw.columns]
+    out = []
+    if 'volume' in raw.columns:
+        traded = (raw['volume'] > 0).values
+        if traded.any() and not traded[0]:
+            n = int(traded.argmax())
+            out.append({
+                'level': 'info', 'code': 'trimmed_preipo', 'rows': n,
+                'message': f"Trimmed {n} leading flat/zero-volume pre-IPO rows "
+                           f"({raw.index[0].date()} -> {raw.index[n].date()}); they "
+                           f"would otherwise fabricate a mean-reversion edge."})
+        zeros = int((raw['volume'].iloc[(traded.argmax() if traded.any() else 0):] == 0).sum())
+        if zeros:
+            out.append({
+                'level': 'warn', 'code': 'interior_zero_volume', 'rows': zeros,
+                'message': f"{zeros} zero-volume bar(s) inside the traded range "
+                           f"(holidays/halts); kept, but treat their returns with care."})
+    return out

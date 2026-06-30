@@ -4,7 +4,7 @@
 *Three of us (Tenzing, Jonathan, Henry), ~$3–5k of our own money. Two equal goals: learn
 enough to put real work on our résumés, and grow the money without doing anything stupid.*
 
-Last touched: 2026-06-27.
+Last touched: 2026-06-29.
 
 ---
 
@@ -35,6 +35,7 @@ Last touched: 2026-06-27.
 - [[plan/03-roadmap]] — Now / Next / Later (no dates — we move as fast as we can)
 - [[plan/04-glossary]] — terms (OOS, walk-forward, theta, IV, Greeks…) so nobody's lost
 - [[plan/05-risk-register]] — what could blow us up (legal, capital, model self-deception)
+- [[plan/06-engineering-plan]] — Tenzing's coding roadmap: deployed app first, future system captured
 
 ### roles/ — who does what
 - [[roles/ROLE_Tenzing]] — engineering / the machine
@@ -65,5 +66,6 @@ affected file — and Claude updates its cloud memory so the next session starts
 Stale plan = dead plan.
 
 ## ▶️ Current focus
-Building the **options/equity visualizer web app** ([[webapp/SPEC]]) and running **Kronos for
-real** on the six tickers. See [[plan/03-roadmap]] → Now.
+Building a **deployed equity/backtest visualizer web app** powered by the canonical Python
+harness, with the larger quant-system ideas captured but deferred. See
+[[plan/06-engineering-plan]] and [[plan/03-roadmap]] → Now.
