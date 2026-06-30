@@ -22,9 +22,12 @@ the accountant who proves whether the offense actually scored *after the bills a
    single most important input to whether a strategy is "real."*
 2. **Define the tradable universe.** Which tickers, why, and what to exclude (e.g., the
    pre-IPO junk in nio/sofi, illiquid names with huge spreads). Liquidity is a feature.
-3. **Own the verdict log.** One short entry per research cycle: what we tested, the
-   OOS-net-of-costs number, and **how it compared to just holding SPY over the same window.**
-   This log is the club's whole track record — guard it.
+3. **Own the verdict log — the JUDGMENT, not the typing.** The harness will *auto-append* the
+   mechanical row (what was tested, OOS-net-of-costs number, vs-SPY benchmark) — that's a
+   `run.py` job, not a human one (see [[plan/01-decision-log]] 2026-06-30). **Your** column is
+   the part a machine can't write: *is this real or luck?* Flag regime dependence, suspicious
+   trade counts, selection bias, and whether the result actually justifies advancing. A number
+   with no skeptical interpretation is just data; you turn it into a verdict.
 4. **Trade journal (once anything is paper-traded).** Every paper trade: thesis, entry,
    exit, expected vs actual cost, what we learned. Reality vs backtest is where the lessons live.
 

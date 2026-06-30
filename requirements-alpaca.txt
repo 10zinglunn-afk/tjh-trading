@@ -1,0 +1,3 @@
+# Alpaca integration (fetch_alpaca.py + alpaca_paper.py). Run LOCALLY only.
+# The core harness does NOT need this -- keep it optional so run.py stays dependency-light.
+alpaca-py>=0.20
