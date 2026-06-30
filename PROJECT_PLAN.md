@@ -4,7 +4,9 @@
 *Three of us (Tenzing, Jonathan, Henry), ~$3–5k of our own money. Two equal goals: learn
 enough to put real work on our résumés, and grow the money without doing anything stupid.*
 
-Last touched: 2026-06-29.
+Last touched: 2026-06-30. New this session: charter (07), Alpaca paper scaffold (08), status
+tracker (09), verdict+diagnostics spec (10), strategy pipeline (11), web-app mockup + design
+target. Strategy testing is now fully specified in [[plan/11-strategy-pipeline]].
 
 ---
 
@@ -36,6 +38,11 @@ Last touched: 2026-06-29.
 - [[plan/04-glossary]] — terms (OOS, walk-forward, theta, IV, Greeks…) so nobody's lost
 - [[plan/05-risk-register]] — what could blow us up (legal, capital, model self-deception)
 - [[plan/06-engineering-plan]] — Tenzing's coding roadmap: deployed app first, future system captured
+- [[plan/07-charter-what-we-do]] — **what we're doing / NOT doing** (goal, scope, stack). Read cold here.
+- [[plan/08-alpaca-setup]] — shared paper account + data→research→paper loop
+- [[plan/09-status-where-we-are]] — **living status tracker** (8-stage pipeline, current bottleneck). Read FIRST.
+- [[plan/10-verdict-and-diagnostics-spec]] — build spec: verdict auto-logger + robustness/red-flag diagnostics
+- [[plan/11-strategy-pipeline]] — **how we find/test/run/show strategies** (the merged scan→gate design)
 
 ### roles/ — who does what
 - [[roles/ROLE_Tenzing]] — engineering / the machine
@@ -50,6 +57,8 @@ Last touched: 2026-06-29.
 
 ### webapp/ — what we're building
 - [[webapp/SPEC]] — the prediction-vs-actual + cost-simulation visualizer
+- [[webapp/DESIGN_TARGET]] — the 5-panel visual target Claude CLI builds to
+- `webapp/MOCKUP.html` — the actual mockup (open in a browser; this is the look we want)
 - [[webapp/options-modeling]] — how we model options honestly, and what we're missing
 
 ### The machine (canonical source of truth)
