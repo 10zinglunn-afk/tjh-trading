@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Skeptic's Machine — visual design target (mockup)</title>
+<style>
+  :root{
+    --text-primary:#1a1a1a;--text-secondary:#666;--text-tertiary:#999;
+    --bg-primary:#fff;--bg-secondary:#f4f4f2;--border:#e3e3e0;
+    --accent-success:#2e9e5b;--accent-danger:#d4483b;
+  }
+  body{background:#fafaf8;margin:0;padding:28px 16px;
+    font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;color:var(--text-primary)}
+  .sm-wrap{max-width:880px;margin:0 auto;font-size:13px}
+  .note{max-width:880px;margin:0 auto 18px;color:var(--text-secondary);font-size:12.5px;line-height:1.5}
+  .sm-top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .sm-title{font-size:15px;font-weight:650}
+  .sm-title span{color:var(--text-tertiary);font-weight:400}
+  .sm-pickers{display:flex;gap:6px;flex-wrap:wrap}
+  .sm-pill{background:var(--bg-secondary);border:1px solid var(--border);border-radius:7px;padding:4px 9px;font-size:12px}
+  .sm-pill b{font-weight:600}.sm-pill-muted{color:var(--text-secondary)}
+  .sm-grid{display:grid;grid-template-columns:1fr 230px;gap:12px}
+  .sm-col{display:flex;flex-direction:column;gap:12px}
+  .sm-card{background:var(--bg-primary);border:1px solid var(--border);border-radius:11px;padding:11px 13px}
+  .sm-card-h{font-size:12px;font-weight:600;margin-bottom:9px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .sm-card-h span{font-weight:400;color:var(--text-tertiary);font-size:11px}
+  .sm-svg{width:100%;height:150px;display:block}
+  .band-long{fill:var(--accent-success);opacity:.10}.band-flat{fill:var(--text-tertiary);opacity:.07}
+  .price{fill:none;stroke:var(--text-primary);stroke-width:1.8}
+  .mk-buy{fill:var(--accent-success)}.mk-sell{fill:var(--accent-danger)}
+  .axis{stroke:var(--border);stroke-width:1}
+  .eq-bh{fill:none;stroke:var(--accent-success);stroke-width:2}
+  .eq-spy{fill:none;stroke:var(--text-tertiary);stroke-width:1.6;stroke-dasharray:4 3}
+  .eq-net{fill:none;stroke:var(--accent-danger);stroke-width:2}
+  .sm-legend{display:flex;gap:14px;margin-top:8px;font-size:11px;color:var(--text-secondary);flex-wrap:wrap}
+  .sm-legend i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+  .k-bh{background:#2e9e5b}.k-spy{background:#9a9a9a}.k-net{background:#d4483b}
+  .sm-slider{display:flex;align-items:center;gap:10px;margin:7px 0}
+  .sm-slider label{width:58px;color:var(--text-secondary);font-size:11px}
+  .track{position:relative;flex:1;height:4px;background:var(--bg-secondary);border-radius:3px}
+  .fill{position:absolute;height:4px;background:var(--text-primary);border-radius:3px}
+  .knob{position:absolute;top:-4px;width:12px;height:12px;border-radius:50%;background:var(--bg-primary);border:2px solid var(--text-primary);transform:translateX(-50%)}
+  .val{width:54px;text-align:right;font-variant-numeric:tabular-nums;font-size:11px}
+  .sm-verdict{display:flex;flex-direction:column}
+  .sm-badge{display:inline-block;align-self:flex-start;padding:5px 12px;border-radius:7px;font-weight:700;font-size:13px}
+  .sm-dead{background:rgba(212,72,59,.12);color:#c0392b}
+  .sm-verdict-sub{font-size:11px;color:var(--text-secondary);margin:7px 0 11px}
+  .sm-metrics{display:flex;flex-direction:column;gap:6px}
+  .sm-metrics>div{display:flex;justify-content:space-between;font-size:12px;border-bottom:1px dashed var(--border);padding-bottom:5px}
+  .sm-metrics span{color:var(--text-secondary)}.sm-metrics b{font-variant-numeric:tabular-nums}
+  .pos{color:var(--accent-success)}.neg{color:var(--accent-danger)}
+  .sm-quote{font-size:15px}.sm-quote b{font-weight:650}
+  .sm-note{font-size:10px;color:var(--text-tertiary);margin-top:3px}
+  .sm-foot{margin-top:11px;font-size:10.5px;color:var(--text-tertiary);text-align:center}
+  .sm-foot code{background:var(--bg-secondary);padding:1px 5px;border-radius:4px}
+  @media(max-width:640px){.sm-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+  <div class="note"><b>Design target for webapp v1.</b> This is a static mockup — the look we're building toward.
+  Every number here is illustrative; in the real app they come from the Python harness via <code>api_server.py</code>.
+  Four panels: ① price + signal, ② after-cost equity vs benchmarks, ③ live cost sliders, ④ verdict.</div>
+
+  <div class="sm-wrap">
+    <div class="sm-top">
+      <div class="sm-title">The Skeptic's Machine <span>· visualizer v1</span></div>
+      <div class="sm-pickers">
+        <span class="sm-pill">Ticker: <b>AAPL</b> ▾</span>
+        <span class="sm-pill">Strategy: <b>SMA 20/100</b> ▾</span>
+        <span class="sm-pill sm-pill-muted">Regime: <b>Liquid ETF (3/1 bps)</b> ▾</span>
+      </div>
+    </div>
+    <div class="sm-grid">
+      <div class="sm-col">
+        <div class="sm-card">
+          <div class="sm-card-h">① Price + signal overlay <span>green = long · grey = flat · ▲▼ = trades</span></div>
+          <svg viewBox="0 0 520 170" class="sm-svg" preserveAspectRatio="none">
+            <rect x="0" y="0" width="150" height="170" class="band-long"/>
+            <rect x="150" y="0" width="90" height="170" class="band-flat"/>
+            <rect x="240" y="0" width="160" height="170" class="band-long"/>
+            <rect x="400" y="0" width="120" height="170" class="band-flat"/>
+            <polyline class="price" points="0,120 40,108 80,118 120,90 150,96 190,104 240,98 280,70 320,82 360,52 400,64 440,72 480,60 520,68"/>
+            <polygon class="mk-buy" points="0,134 8,146 -8,146"/>
+            <polygon class="mk-sell" points="150,150 158,138 142,138"/>
+            <polygon class="mk-buy" points="240,112 248,124 232,124"/>
+            <polygon class="mk-sell" points="400,78 408,66 392,66"/>
+          </svg>
+        </div>
+        <div class="sm-card">
+          <div class="sm-card-h">② Pay-per-trade simulator <span>equity, net of costs</span></div>
+          <svg viewBox="0 0 520 170" class="sm-svg">
+            <line x1="0" y1="150" x2="520" y2="150" class="axis"/>
+            <polyline class="eq-bh"  points="0,150 90,128 180,108 270,92 360,74 450,58 520,48"/>
+            <polyline class="eq-spy" points="0,150 90,134 180,120 270,104 360,90 450,78 520,70"/>
+            <polyline class="eq-net" points="0,150 90,142 180,140 270,150 360,148 450,158 520,166"/>
+          </svg>
+          <div class="sm-legend">
+            <span><i class="k-bh"></i>Buy &amp; hold</span>
+            <span><i class="k-spy"></i>SPY</span>
+            <span><i class="k-net"></i>Strategy, after costs</span>
+          </div>
+        </div>
+        <div class="sm-card">
+          <div class="sm-card-h">③ Cost assumptions <span>drag → everything recomputes</span></div>
+          <div class="sm-slider"><label>Spread</label><div class="track"><div class="fill" style="width:18%"></div><div class="knob" style="left:18%"></div></div><span class="val">3.0 bps</span></div>
+          <div class="sm-slider"><label>Slippage</label><div class="track"><div class="fill" style="width:10%"></div><div class="knob" style="left:10%"></div></div><span class="val">1.0 bps</span></div>
+          <div class="sm-slider"><label>Fee/trade</label><div class="track"><div class="fill" style="width:0%"></div><div class="knob" style="left:0%"></div></div><span class="val">$0.00</span></div>
+        </div>
+      </div>
+      <div class="sm-col">
+        <div class="sm-card sm-verdict">
+          <div class="sm-card-h">④ Verdict <span>OOS, net of costs</span></div>
+          <div class="sm-badge sm-dead">DEAD ✕</div>
+          <div class="sm-verdict-sub">Does not beat buy &amp; hold OOS after costs.</div>
+          <div class="sm-metrics">
+            <div><span>OOS return</span><b class="neg">−2.4%</b></div>
+            <div><span>Buy &amp; hold</span><b class="pos">+41.0%</b></div>
+            <div><span>Sharpe</span><b>0.07</b></div>
+            <div><span>Max drawdown</span><b class="neg">−19.8%</b></div>
+            <div><span>Trades</span><b>34</b></div>
+            <div><span>Win rate</span><b>46%</b></div>
+          </div>
+        </div>
+        <div class="sm-card sm-live">
+          <div class="sm-card-h">Live quote <span>display only</span></div>
+          <div class="sm-quote">AAPL <b>$214.6</b> <span class="neg">−0.3%</span></div>
+          <div class="sm-note">Not a recommendation · via broker MCP</div>
+        </div>
+      </div>
+    </div>
+    <div class="sm-foot">Mockup — the real app on <code>feat/webapp-v1</code> computes every number in Python; the browser only draws.</div>
+  </div>
+</body>
+</html>
