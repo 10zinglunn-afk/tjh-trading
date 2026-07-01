@@ -80,9 +80,12 @@ Only a candidate that clears **all four** is a "survivor."
   Ranks OOS-net-of-costs; a result earns `EDGE?` only if it beats both baselines AND is positive
   AND non-thin, else `suspect`/`dead`. It does NOT reimplement costs/backtest/walkforward. Each
   ticker is scored independently, so it needs no multi-asset engine (that is cross-sectional
-  momentum's job, still deferred). First run on the 6 `realdata/` names: **zero clean survivors** —
-  the honest base rate. Compute measured at ~0.05s/ticker on daily bars; scaling to hundreds of
-  names costs seconds and $0.
+  momentum's job, still deferred). If `realdata/spy.csv` is present it also judges every result
+  **vs holding SPY over the same OOS window** (the charter's canonical opportunity-cost bar).
+  Expanded via `fetch_universe.py` to **53 liquid names** (index ETFs + ~40 large caps): **0 EDGE?,
+  12 suspect, 94 dead** across 106 backtests — the honest base rate (simple timing rules do not beat
+  holding the index on liquid daily bars). Compute measured at **~25 ms/backtest, 2.7s total**;
+  scaling to hundreds of names costs seconds and $0.
 - **Promotion** to paper requires a human sign-off (Jonathan's story + Henry's judgment), not
   just a green cell.
 

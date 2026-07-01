@@ -23,14 +23,16 @@ real deliverable is a machine that tells the truth about whether an edge exists.
 | `fetch_data.py` | Run LOCALLY to pull real SPY/QQQ via yfinance (sandbox has no internet). |
 | `forecast_kronos.py` | Run LOCALLY (needs torch + HF download). Causal walk-forward Kronos forecaster → caches next-bar return to `<ticker>.kronos.csv`. `--mock` tests plumbing with no model. Frequency-agnostic (daily/intraday). |
 | `run.py` | Entry point. Cost-regime table + walk-forward row. Auto-adds a `kronos` row + Kronos OOS walk-forward if a `.kronos.csv` sidecar exists. |
-| `scan.py` | **Wide scan** (plan/11 §4). Thin wrapper: loops `walk_forward` over (ticker × strategy × grid) and ranks the OOS-net-of-costs results, scoring buy&hold + random through the SAME folds. Verdict `EDGE?` requires beating both baselines AND positive return AND ≥30 trades/fold — thin flukes / less-bad losers are marked `suspect`, not survivors. Compute is a non-issue (~0.05s/ticker on daily bars). |
+| `scan.py` | **Wide scan** (plan/11 §4). Thin wrapper: loops `walk_forward` over (ticker × strategy × grid) and ranks the OOS-net-of-costs results, scoring buy&hold + random through the SAME folds. If `realdata/spy.csv` exists it also judges every result **vs holding SPY over the same window** (the opportunity-cost bar). Verdict `EDGE?` requires beating **SPY + random** AND positive return AND ≥30 trades/fold — thin flukes / less-bad losers are `suspect`, not survivors. ~25 ms/backtest; 106 backtests in ~2.7s. First run on 53 liquid names: **0 EDGE?, 12 suspect, 94 dead** (the honest base rate). |
+| `fetch_universe.py` | Run LOCALLY (internet + yfinance). Batch-fetches a curated **liquid** universe (index ETFs + ~40 large caps, Henry's call) of adjusted daily bars into `realdata/` (gitignored — vendor terms). Then `scan.py` picks them all up. `python3 fetch_universe.py [EXTRA TICKERS…]`. |
 
 ## Run it
 ```bash
 python3 run.py            # synthetic data, always works
 python3 fetch_data.py SPY # locally only; writes spy.csv
 python3 run.py spy.csv    # real data
-python3 scan.py           # rank the curated library across every realdata/*.csv
+python3 fetch_universe.py # locally only; fills realdata/ with the liquid universe
+python3 scan.py           # rank the curated library across every realdata/*.csv (vs SPY)
 python3 scan.py realdata/tqqq.csv f.csv   # scan a chosen subset
 
 # Kronos (run LOCALLY, in a clone of github.com/shiyu-coder/Kronos or with it on PYTHONPATH):

@@ -8,14 +8,14 @@ net-of-costs result for each. It does NOT reimplement costs/backtest/walkforward
 it introduces no new backtest math.
 
 What it answers: "over a basket of stocks, where (if anywhere) does a strategy's timing
-actually beat just holding the stock (and beat random) out-of-sample, after costs -- and
-which name is worth a closer look?" Each ticker is scored independently (no cross-asset
-coupling), so this is just a loop; it needs no multi-asset engine.
+actually beat just holding the index (SPY) out-of-sample, after costs -- and which name is
+worth a closer look?" Each ticker is scored independently (no cross-asset coupling), so this
+is just a loop; it needs no multi-asset engine.
 
 Honesty rails baked in:
   * Gate 1 -- every number is net of the LIQUID-ETF cost regime (3/1 bps), not frictionless.
-  * Gate 2 -- buy&hold AND random are scored through the SAME walk-forward folds, so the
-              "beats both" verdict is apples-to-apples on the identical OOS window.
+  * Gate 2 -- buy&hold, random AND (if realdata/spy.csv exists) holding SPY over the same
+              window are all scored on the identical OOS dates, so "beats them" is real.
   * Gate 3 -- the trial count N (grid size searched) is printed next to every result, so a
               big-looking Sharpe that is really "best of 12" is visible. (Full deflated
               Sharpe lives in the diagnostics module; N is the minimum bar plan/11 requires.)
@@ -61,39 +61,55 @@ def _factory(fn):
 
 
 def _oos(px, fn, grid, cost_model=ETF_COST, n_folds=N_FOLDS):
-    """Walk-forward a single (signal, grid) on one price series; return OOS metrics + N."""
+    """Walk-forward one (signal, grid) on a price series; return (OOS metrics, OOS index).
+    The OOS index is identical across strategies on a ticker (folds depend only on length),
+    so callers reuse the buy&hold run's index as the ticker's OOS window."""
     combined, _ = walk_forward(px, _factory(fn), grid, cost_model, n_folds=n_folds)
     m = compute_metrics(combined)
     m['n_trials'] = len(grid)
-    return m
+    return m, combined.index
 
 
-def scan_universe(paths, cost_model=ETF_COST, n_folds=N_FOLDS):
+def scan_universe(paths, benchmark=None, cost_model=ETF_COST, n_folds=N_FOLDS):
     """Loop the curated library over a universe. Returns a list of result dicts, one per
-    (ticker, candidate strategy), each carrying its OOS-net-of-costs metrics AND the two
-    baseline OOS returns it is judged against. Pure data -- printing is done by main()."""
+    (ticker, candidate strategy). Each carries its OOS-net-of-costs metrics and the bars it
+    is judged against: the ticker's own buy&hold + random (through the same folds) and, if a
+    `benchmark` close Series (SPY) is given, the return of just HOLDING SPY over the identical
+    OOS window -- the opportunity-cost bar the charter treats as canonical."""
     rows = []
     for path in paths:
         ticker = os.path.splitext(os.path.basename(path))[0]
         px = load_csv(path)['close']
-        base = {name: _oos(px, fn, grid, cost_model, n_folds)
-                for name, (fn, grid) in BASELINES.items()}
+        base, oos_idx = {}, None
+        for name, (fn, grid) in BASELINES.items():
+            m, idx = _oos(px, fn, grid, cost_model, n_folds)
+            base[name] = m
+            if name == 'buy_hold':
+                oos_idx = idx
         bh, rnd = base['buy_hold']['total_return'], base['random']['total_return']
+
+        spy = None                              # hold-SPY total return over the same OOS window
+        if benchmark is not None and oos_idx is not None and len(oos_idx):
+            b = benchmark.reindex(oos_idx).dropna()
+            if len(b) > 1:
+                spy = float(b.iloc[-1] / b.iloc[0] - 1)
+
         for strat, (fn, grid) in CANDIDATES.items():
-            m = _oos(px, fn, grid, cost_model, n_folds)
-            beats_bh = m['total_return'] > bh
-            beats_rnd = m['total_return'] > rnd
+            m, _ = _oos(px, fn, grid, cost_model, n_folds)
+            ret = m['total_return']
             tpf = m['num_trades'] / n_folds
-            # "beats both baselines" (Gate 2, literal) is necessary but NOT sufficient:
-            # beating a -60% buy&hold by losing only -10% is less-bad, not an edge, and a
-            # 3-trades/fold result is luck. A clean look-closer must also make money and
-            # trade enough to mean something.
+            beats_bh = ret > bh
+            beats_rnd = ret > rnd
+            beats_spy = spy is None or ret > spy         # no SPY on disk => don't block on it
             survives_gate2 = beats_bh and beats_rnd
-            clean = survives_gate2 and m['total_return'] > 0 and tpf >= MIN_TRADES_PER_FOLD
+            # A clean look-closer must clear the REAL bar: beat holding SPY, beat random,
+            # actually make money, and trade enough that it isn't 2-3 lucky rides.
+            clean = (survives_gate2 and beats_spy and ret > 0
+                     and tpf >= MIN_TRADES_PER_FOLD)
             rows.append({
                 'ticker': ticker, 'strategy': strat, 'metrics': m,
-                'bh_return': bh, 'rand_return': rnd,
-                'beats_bh': beats_bh, 'beats_rand': beats_rnd,
+                'bh_return': bh, 'rand_return': rnd, 'spy_return': spy,
+                'beats_bh': beats_bh, 'beats_rand': beats_rnd, 'beats_spy': beats_spy,
                 'survives_gate2': survives_gate2, 'clean': clean,
                 'trades_per_fold': tpf, 'thin': tpf < MIN_TRADES_PER_FOLD,
             })
@@ -101,63 +117,89 @@ def scan_universe(paths, cost_model=ETF_COST, n_folds=N_FOLDS):
 
 
 def _pct(v, width=7):
-    return (format(v * 100, f'{width}.1f') if v == v else format('nan', f'>{width}')) + '%'
+    if v is None or v != v:
+        return format('nan', f'>{width}') + ' '
+    return format(v * 100, f'{width}.1f') + '%'
+
+
+def _verdict(r):
+    return ('EDGE?' if r['clean'] else
+            'suspect' if r['survives_gate2'] else   # beat both baselines but thin/lost money
+            'beats B&H' if r['beats_bh'] else 'dead')
+
+
+HDR = "  ticker strat     N   OOS ret   Sharpe   maxDD   trds  t/fold    vsSPY  verdict"
+
+
+def _line(r):
+    m = r['metrics']
+    flag = ' *thin' if r['thin'] else ''
+    vs = _pct(m['total_return'] - r['spy_return'], 7) if r['spy_return'] is not None else '   n/a '
+    return (f"  {r['ticker']:6s} {r['strategy']:7s} {m['n_trials']:3d} "
+            f"{_pct(m['total_return'])}  {m['sharpe']:6.2f}  {_pct(m['max_drawdown'], 6)} "
+            f"{m['num_trades']:5d} {r['trades_per_fold']:6.1f} {vs}  {_verdict(r)}{flag}")
 
 
 def main():
     paths = sys.argv[1:] or sorted(glob.glob('realdata/*.csv'))
     if not paths:
-        print("No CSVs to scan. Pass paths or add files to realdata/.")
+        print("No CSVs to scan. Pass paths or run fetch_universe.py into realdata/.")
         return
+    # SPY is the opportunity-cost benchmark ("would I have been better off in the index?").
+    benchmark = None
+    if os.path.exists('realdata/spy.csv'):
+        benchmark = load_csv('realdata/spy.csv', warn=False)['close']
+
     t0 = time.time()
-    rows = scan_universe(paths)
+    rows = scan_universe(paths, benchmark=benchmark)
     elapsed = time.time() - t0
 
     tickers = sorted({r['ticker'] for r in rows})
-    print(f"\nWIDE SCAN -- {len(tickers)} tickers x {len(CANDIDATES)} strategies, "
-          f"walk-forward OOS, net of LIQUID-ETF costs (3/1 bps), {N_FOLDS} folds")
-    print(f"Ran in {elapsed:.2f}s on this machine.  (daily bars => compute is a non-issue)\n")
-
-    # Per-ticker baseline context: what you'd get just holding the name over the OOS window.
-    print("Baseline OOS return over the same window (the bar to beat):")
-    for t in tickers:
-        r = next(x for x in rows if x['ticker'] == t)
-        print(f"  {t:6s}  buy&hold {_pct(r['bh_return'])}   random {_pct(r['rand_return'])}")
-
-    # Leaderboard: every (ticker, strategy), best OOS net return first.
     rows.sort(key=lambda r: (r['metrics']['total_return']
                              if r['metrics']['total_return'] == r['metrics']['total_return']
                              else -1e9), reverse=True)
-    print("\nLEADERBOARD (OOS net-of-costs return, best first):")
-    print("  ticker strat     N   OOS ret   Sharpe   maxDD   trds  t/fold  verdict")
-    print("  " + "-" * 70)
-    for r in rows:
-        m = r['metrics']
-        flag = ' *thin' if r['thin'] else ''
-        verdict = ('EDGE?' if r['clean'] else
-                   'suspect' if r['survives_gate2'] else   # beat both but thin or lost money
-                   'beats B&H' if r['beats_bh'] else 'dead')
-        print(f"  {r['ticker']:6s} {r['strategy']:7s} {m['n_trials']:3d} "
-              f"{_pct(m['total_return'])}  {m['sharpe']:6.2f}  {_pct(m['max_drawdown'],6)} "
-              f"{m['num_trades']:5d} {r['trades_per_fold']:6.1f}  {verdict}{flag}")
 
-    clean = [r for r in rows if r['clean']]        # rows already sorted by return, best first
-    print("\n" + "-" * 74)
-    if clean:
-        top = clean[0]
+    print(f"\nWIDE SCAN -- {len(tickers)} tickers x {len(CANDIDATES)} strategies "
+          f"= {len(rows)} backtests, walk-forward OOS, net of LIQUID-ETF costs (3/1 bps), "
+          f"{N_FOLDS} folds")
+    bench = ("judged vs HOLDING SPY over the same window" if benchmark is not None
+             else "(no realdata/spy.csv -> vsSPY blank)")
+    print(f"{bench}.  Ran in {elapsed:.2f}s "
+          f"({elapsed / max(len(rows), 1) * 1000:.0f} ms/backtest) -- compute is a non-issue.\n")
+
+    edges = [r for r in rows if r['clean']]
+    suspects = [r for r in rows if r['survives_gate2'] and not r['clean']]
+    print(f"RESULT: {len(edges)} EDGE?  |  {len(suspects)} suspect  |  "
+          f"{len(rows) - len(edges) - len(suspects)} dead   (of {len(rows)})\n")
+
+    if edges:
+        print("EDGE? candidates (beat SPY + random, positive, >=30 trades/fold):")
+        print(HDR); print("  " + "-" * 82)
+        for r in edges:
+            print(_line(r))
+        print()
+
+    top_n = min(20, len(rows))
+    print(f"TOP {top_n} by OOS net return (context -- most of these are noise):")
+    print(HDR); print("  " + "-" * 82)
+    for r in rows[:top_n]:
+        print(_line(r))
+
+    print("\n" + "-" * 86)
+    if edges:
+        top = edges[0]
         print(f"Closest look -> {top['ticker'].upper()} / {top['strategy']}: "
-              f"OOS {_pct(top['metrics']['total_return'])} net -- beats both baselines, "
-              f"positive, {top['trades_per_fold']:.0f} trades/fold.")
+              f"OOS {_pct(top['metrics']['total_return'])} net, beats SPY + random, "
+              f"{top['trades_per_fold']:.0f} trades/fold.")
         print("  Still a SUSPECT, not a winner. Before it is believed it needs:")
-        print("  (Gate 3) a multiple-testing discount -- it is the best of "
-              f"{top['metrics']['n_trials']} configs across {len(tickers)} names; and")
+        print(f"  (Gate 3) a deflated Sharpe -- best of {top['metrics']['n_trials']} configs "
+              f"across {len(tickers)} names; and")
         print("  (Gate 4) a Jonathan thesis for WHY the edge exists and who is on the other side.")
     else:
-        print("No clean survivor. Some results 'beat both baselines', but every one is either")
-        print("THIN (a few lucky trades -- e.g. plug/sma: 16 trades, best of 9, -86% drawdown)")
-        print("or still LOST money (beating a -60% hold by only losing -10% is less-bad, not edge).")
-        print("That is the honest, expected base rate -- the scan did its job by refusing to")
-        print("hand us a fake winner. Zero real edges in 6 single names is entirely normal.")
+        print(f"No clean survivor in {len(rows)} backtests across {len(tickers)} liquid names.")
+        print("Nothing beat SPY + random OOS after costs with a positive, non-thin record.")
+        print("That is the honest base rate: on liquid daily bars, simple timing rules do not")
+        print("beat just holding the index. The scan did its job by refusing a fake winner.")
     print("* thin = fewer than 30 trades/fold; treat its Sharpe as noise.\n")
 
 
