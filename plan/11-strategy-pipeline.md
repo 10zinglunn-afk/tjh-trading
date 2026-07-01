@@ -74,9 +74,15 @@ Only a candidate that clears **all four** is a "survivor."
 - **Research runs** happen in the terminal: `run.py <ticker.csv>` (and the web app's on-demand
   API). Every real run auto-appends a verdict row (`verdicts.jsonl`, see plan/10) — Henry adds
   the *judgment*, not the typing.
-- **Wide scan** (when we do one): loop the curated library × param grids × the universe through
-  the SAME harness, collect verdict rows, then rank with the Gate-3 discount applied. The scan is
-  a convenience wrapper over the canonical engine — it must NOT reimplement costs/backtest/walkforward.
+- **Wide scan** — **BUILT (`scan.py`).** Loops the curated library × param grids × the universe
+  through the SAME harness, scores buy&hold + random through the identical folds (Gate 2), prints
+  the trial count `N` next to every Sharpe (Gate 3 minimum) and flags <30 trades/fold (Gate 4).
+  Ranks OOS-net-of-costs; a result earns `EDGE?` only if it beats both baselines AND is positive
+  AND non-thin, else `suspect`/`dead`. It does NOT reimplement costs/backtest/walkforward. Each
+  ticker is scored independently, so it needs no multi-asset engine (that is cross-sectional
+  momentum's job, still deferred). First run on the 6 `realdata/` names: **zero clean survivors** —
+  the honest base rate. Compute measured at ~0.05s/ticker on daily bars; scaling to hundreds of
+  names costs seconds and $0.
 - **Promotion** to paper requires a human sign-off (Jonathan's story + Henry's judgment), not
   just a green cell.
 

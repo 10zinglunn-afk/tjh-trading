@@ -23,12 +23,15 @@ real deliverable is a machine that tells the truth about whether an edge exists.
 | `fetch_data.py` | Run LOCALLY to pull real SPY/QQQ via yfinance (sandbox has no internet). |
 | `forecast_kronos.py` | Run LOCALLY (needs torch + HF download). Causal walk-forward Kronos forecaster → caches next-bar return to `<ticker>.kronos.csv`. `--mock` tests plumbing with no model. Frequency-agnostic (daily/intraday). |
 | `run.py` | Entry point. Cost-regime table + walk-forward row. Auto-adds a `kronos` row + Kronos OOS walk-forward if a `.kronos.csv` sidecar exists. |
+| `scan.py` | **Wide scan** (plan/11 §4). Thin wrapper: loops `walk_forward` over (ticker × strategy × grid) and ranks the OOS-net-of-costs results, scoring buy&hold + random through the SAME folds. Verdict `EDGE?` requires beating both baselines AND positive return AND ≥30 trades/fold — thin flukes / less-bad losers are marked `suspect`, not survivors. Compute is a non-issue (~0.05s/ticker on daily bars). |
 
 ## Run it
 ```bash
 python3 run.py            # synthetic data, always works
 python3 fetch_data.py SPY # locally only; writes spy.csv
 python3 run.py spy.csv    # real data
+python3 scan.py           # rank the curated library across every realdata/*.csv
+python3 scan.py realdata/tqqq.csv f.csv   # scan a chosen subset
 
 # Kronos (run LOCALLY, in a clone of github.com/shiyu-coder/Kronos or with it on PYTHONPATH):
 python3 forecast_kronos.py realdata/tqqq.csv --mock          # plumbing test, no model
@@ -62,6 +65,13 @@ Ran the harness and the core validation claims; all hold:
 4. **Metrics are slice-safe** (equity recomputed from `net`) — required for fold scoring.
 5. New strategies are just a function `(prices, **kw) -> position Series in [-1,1]`.
    They must clear the same OOS-net-of-costs bar as everything else.
+
+## Cost policy — free by default
+Default to free tools, data, and infra (yfinance / Alpaca free daily bars / pandas / numpy /
+Vercel free tier / Alpaca **paper**). A paid dependency (e.g. Alpaca's ~$99/mo live SIP feed,
+managed DBs, paid APIs) is adopted **only** when it's ~20x more helpful than the free path
+**and** Tenzing signs off first. Never assume a paid service; propose it and justify the 20x.
+"Folds," "walk-forward," "diagnostics," etc. are compute on data we already have — they cost $0.
 
 ## Next steps (from README)
 1. Real data: `fetch_data.py` for SPY/QQQ/IWM, then `run.py spy.csv`. Expect edge to
