@@ -31,6 +31,11 @@ log automatically; the human verdict log is rendered from it.
 **Goal:** surface *why* a result might be fake, as numbers a beginner can read, and auto-raise
 red flags. This is what makes Henry's reframed role possible. Flags GUIDE; they don't decide.
 
+**Status: BUILT — `diagnostics.py`.** Deflated Sharpe (Bailey–López de Prado), per-year
+return+Sharpe, trades/fold, SPY-regime split, and `red_flags()` are implemented and wired into
+`scan.py` as the Gate-3 filter (`EDGE?` requires deflated Sharpe ≥0.95); a `sanity_check.py`
+guard asserts noise can't manufacture significance. **Part A (verdict auto-logger) is still TODO.**
+
 **Implement in a new `diagnostics.py`, computed from the walk-forward output:**
 1. **Per-year (and per-fold) return + Sharpe.** A small table/series. If all the edge comes
    from one year, that's the tell. Return as a list the web app can bar-chart.

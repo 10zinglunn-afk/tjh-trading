@@ -34,6 +34,7 @@ from costs import CostModel
 from metrics import compute_metrics
 from strategies import buy_and_hold, random_strategy, sma_crossover, mean_reversion
 from walkforward import walk_forward
+from diagnostics import diagnose, config_sharpes
 
 # The truth-for-equities regime. Frictionless is a lie; options are a separate study.
 ETF_COST = CostModel(spread_bps=3, slippage_bps=1)
@@ -95,22 +96,30 @@ def scan_universe(paths, benchmark=None, cost_model=ETF_COST, n_folds=N_FOLDS):
                 spy = float(b.iloc[-1] / b.iloc[0] - 1)
 
         for strat, (fn, grid) in CANDIDATES.items():
-            m, _ = _oos(px, fn, grid, cost_model, n_folds)
+            combined, _ = walk_forward(px, _factory(fn), grid, cost_model, n_folds=n_folds)
+            m = compute_metrics(combined)
+            m['n_trials'] = len(grid)
+            diag = diagnose(combined, len(grid), benchmark=benchmark,
+                            trial_sharpes=config_sharpes(px, fn, grid, cost_model),
+                            n_folds=n_folds)
+            dsr = diag['deflated_sharpe']
             ret = m['total_return']
             tpf = m['num_trades'] / n_folds
             beats_bh = ret > bh
             beats_rnd = ret > rnd
             beats_spy = spy is None or ret > spy         # no SPY on disk => don't block on it
             survives_gate2 = beats_bh and beats_rnd
-            # A clean look-closer must clear the REAL bar: beat holding SPY, beat random,
-            # actually make money, and trade enough that it isn't 2-3 lucky rides.
+            significant = dsr == dsr and dsr >= 0.95      # Gate 3: multiple-testing discount
+            # A clean look-closer must clear the REAL bar: beat holding SPY + random, make money,
+            # trade enough to not be luck, AND survive the deflated-Sharpe (best-of-N) discount.
             clean = (survives_gate2 and beats_spy and ret > 0
-                     and tpf >= MIN_TRADES_PER_FOLD)
+                     and tpf >= MIN_TRADES_PER_FOLD and significant)
             rows.append({
                 'ticker': ticker, 'strategy': strat, 'metrics': m,
                 'bh_return': bh, 'rand_return': rnd, 'spy_return': spy,
                 'beats_bh': beats_bh, 'beats_rand': beats_rnd, 'beats_spy': beats_spy,
-                'survives_gate2': survives_gate2, 'clean': clean,
+                'survives_gate2': survives_gate2, 'clean': clean, 'significant': significant,
+                'dsr': dsr, 'red_flags': diag['red_flags'],
                 'trades_per_fold': tpf, 'thin': tpf < MIN_TRADES_PER_FOLD,
             })
     return rows
@@ -128,7 +137,11 @@ def _verdict(r):
             'beats B&H' if r['beats_bh'] else 'dead')
 
 
-HDR = "  ticker strat     N   OOS ret   Sharpe   maxDD   trds  t/fold    vsSPY  verdict"
+HDR = "  ticker strat     N   OOS ret   Sharpe   maxDD   trds  t/fold    vsSPY   DSR  verdict"
+
+
+def _dsr(v):
+    return f"{v:5.2f}" if v is not None and v == v else "  nan"
 
 
 def _line(r):
@@ -137,7 +150,8 @@ def _line(r):
     vs = _pct(m['total_return'] - r['spy_return'], 7) if r['spy_return'] is not None else '   n/a '
     return (f"  {r['ticker']:6s} {r['strategy']:7s} {m['n_trials']:3d} "
             f"{_pct(m['total_return'])}  {m['sharpe']:6.2f}  {_pct(m['max_drawdown'], 6)} "
-            f"{m['num_trades']:5d} {r['trades_per_fold']:6.1f} {vs}  {_verdict(r)}{flag}")
+            f"{m['num_trades']:5d} {r['trades_per_fold']:6.1f} {vs} {_dsr(r['dsr'])}  "
+            f"{_verdict(r)}{flag}")
 
 
 def main():
@@ -173,31 +187,39 @@ def main():
           f"{len(rows) - len(edges) - len(suspects)} dead   (of {len(rows)})\n")
 
     if edges:
-        print("EDGE? candidates (beat SPY + random, positive, >=30 trades/fold):")
-        print(HDR); print("  " + "-" * 82)
+        print("EDGE? candidates (beat SPY + random, positive, >=30 trades/fold, DSR>=0.95):")
+        print(HDR); print("  " + "-" * 88)
         for r in edges:
             print(_line(r))
         print()
 
     top_n = min(20, len(rows))
     print(f"TOP {top_n} by OOS net return (context -- most of these are noise):")
-    print(HDR); print("  " + "-" * 82)
+    print(HDR); print("  " + "-" * 88)
     for r in rows[:top_n]:
         print(_line(r))
 
-    print("\n" + "-" * 86)
+    # The machine explaining ITSELF: why the biggest-looking numbers are not edges.
+    print("\nWhy the top 5 numbers are not edges (auto red flags -- a prompt to look, not a verdict):")
+    for r in rows[:5]:
+        flags = r['red_flags'] or ['(no automated flag -- but costs + N-trial discount still apply)']
+        print(f"  {r['ticker'].upper()}/{r['strategy']}  ({_pct(r['metrics']['total_return']).strip()}):")
+        for f in flags:
+            print(f"     - {f}")
+
+    print("\n" + "-" * 90)
     if edges:
         top = edges[0]
         print(f"Closest look -> {top['ticker'].upper()} / {top['strategy']}: "
               f"OOS {_pct(top['metrics']['total_return'])} net, beats SPY + random, "
-              f"{top['trades_per_fold']:.0f} trades/fold.")
-        print("  Still a SUSPECT, not a winner. Before it is believed it needs:")
-        print(f"  (Gate 3) a deflated Sharpe -- best of {top['metrics']['n_trials']} configs "
-              f"across {len(tickers)} names; and")
-        print("  (Gate 4) a Jonathan thesis for WHY the edge exists and who is on the other side.")
+              f"{top['trades_per_fold']:.0f} trades/fold, deflated Sharpe {top['dsr']:.2f}.")
+        print("  It cleared Gates 1-3 (costs, OOS-vs-SPY, multiple-testing). Before it is")
+        print("  believed it STILL needs Gate 4: Jonathan's thesis for WHY the edge exists and")
+        print("  who is on the other side. A green number with no economic story is luck.")
     else:
         print(f"No clean survivor in {len(rows)} backtests across {len(tickers)} liquid names.")
-        print("Nothing beat SPY + random OOS after costs with a positive, non-thin record.")
+        print("Nothing beat SPY + random OOS after costs with a positive, non-thin record --")
+        print(f"and none clears the deflated-Sharpe discount for having searched {len(rows)} configs.")
         print("That is the honest base rate: on liquid daily bars, simple timing rules do not")
         print("beat just holding the index. The scan did its job by refusing a fake winner.")
     print("* thin = fewer than 30 trades/fold; treat its Sharpe as noise.\n")

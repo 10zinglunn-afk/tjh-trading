@@ -84,8 +84,10 @@ Only a candidate that clears **all four** is a "survivor."
   **vs holding SPY over the same OOS window** (the charter's canonical opportunity-cost bar).
   Expanded via `fetch_universe.py` to **53 liquid names** (index ETFs + ~40 large caps): **0 EDGE?,
   12 suspect, 94 dead** across 106 backtests — the honest base rate (simple timing rules do not beat
-  holding the index on liquid daily bars). Compute measured at **~25 ms/backtest, 2.7s total**;
-  scaling to hundreds of names costs seconds and $0.
+  holding the index on liquid daily bars). `EDGE?` also requires a **deflated Sharpe ≥0.95**
+  (Gate 3, `diagnostics.py`), and each top name gets auto **red flags** ("92% of return from 2020",
+  "only 1 trade/fold") so a beginner SEES why a big number is fake. Compute **~40 ms/backtest, ~4s
+  total**; scaling to hundreds of names costs seconds and $0.
 - **Promotion** to paper requires a human sign-off (Jonathan's story + Henry's judgment), not
   just a green cell.
 

@@ -88,6 +88,16 @@ def main():
           len(combined) > 0 and km["bars"] == len(combined),
           f"{len(combined)} OOS bars across {len(chosen)} folds")
 
+    # 7. DIAGNOSTICS DON'T MANUFACTURE SIGNIFICANCE. On a random walk (no edge), searching
+    #    a whole grid must NOT let the best config clear the deflated-Sharpe bar. If scanning
+    #    noise "proves" significance, the multiple-testing discount is broken.
+    from diagnostics import deflated_sharpe_ratio, config_sharpes
+    combined0, _ = walk_forward(px0, factory, grid, CostModel(3, 1), n_folds=5)
+    dsr0 = deflated_sharpe_ratio(combined0["net"].values, len(grid),
+                                 config_sharpes(px0, mean_reversion, grid, CostModel(3, 1)))
+    check("deflated Sharpe does NOT manufacture edge on a random walk",
+          not (dsr0 >= 0.95), f"noise deflated Sharpe = {dsr0:.3f} (want < 0.95)")
+
     n_fail = sum(1 for ok, _, _ in results if not ok)
     print(f"\n{'='*48}\n{len(results)-n_fail}/{len(results)} checks passed.")
     if n_fail:
