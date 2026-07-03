@@ -8,6 +8,15 @@ When a decision changes, add a NEW entry that supersedes the old one (don't dele
 
 ---
 
+### 2026-07-02 — Work merges to `main` the same session it stops; `main` is the only truth
+**Decision:** No long-lived feature branches. Whatever is done at the end of a work session
+gets merged to `main` and pushed. Status pages (Notion, plan/09) are always written from `main`.
+**Why:** All real work Jun 29–Jul 1 sat only on `feat/webapp-v1` while `main` looked 3 weeks
+stale — the Jul 2 Notion status was accidentally written from `main` and reported finished work
+(web app, data cleanup, universe, diagnostics) as not started. Two sources of truth = zero.
+Merged (clean fast-forward) 2026-07-02.
+**Who:** Tenzing (Claude flagged it during the full-project review).
+
 ### 2026-06-30 — Automate verdict capture; Henry owns judgment, not clerical logging
 **Decision:** The mechanical verdict row (strategy, params, OOS-net-of-costs, vs-SPY benchmark,
 date) gets auto-appended by the harness (extend `run.py`/`export_results.py` to write a

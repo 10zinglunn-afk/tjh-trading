@@ -3,7 +3,7 @@
 Home: [[PROJECT_PLAN]] · Charter: [[plan/07-charter-what-we-do]] · Decisions: [[plan/01-decision-log]]
 
 *The single "where are we right now" page. Update this whenever a stage moves. If you (or
-Claude) are catching up cold, read this first, then the charter. Last updated: 2026-06-30.*
+Claude) are catching up cold, read this first, then the charter. Last updated: 2026-07-02.*
 
 ## The mission, in one line
 Find ONE signal that beats buy-and-hold OOS net of realistic costs on real equity data, prove
@@ -15,9 +15,9 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started
 | Stage | What it means | Status |
 |------|----------------|:--:|
 | **1. Harness** | costs/backtest/walkforward/metrics; no-lookahead verified | ✅ |
-| **2. Real data in** | adjusted daily bars via `fetch_data.py` (yfinance) or `fetch_alpaca.py` | 🟡 (6 test tickers exist; real liquid universe not chosen yet) |
+| **2. Real data in** | adjusted daily bars via `fetch_data.py` (yfinance) or `fetch_alpaca.py` | 🟡 (53-ticker provisional universe fetched via `fetch_universe.py`; Henry to ratify) |
 | **3. First reasoned strategy** | Jonathan writes a thesis with a *why*; Tenzing implements it | ⬜ **(the current bottleneck)** |
-| **4. Run + verdict** | run harness on a liquid ticker, record OOS-net-of-costs vs SPY | ⬜ |
+| **4. Run + verdict** | run harness on a liquid ticker, record OOS-net-of-costs vs SPY | 🟡 (verdict auto-logger live — `verdicts.jsonl`; wide scan logged: 0/106 clean edges; no *reasoned* strategy run yet) |
 | **5. Web app v1** | Next.js + FastAPI visualizer; restyle to `webapp/MOCKUP.html` | 🟡 (works; ugly — mockup is the target) |
 | **6. Kronos for real** | run `forecast_kronos.py` non-mock on real tickers, read OOS row | ⬜ |
 | **7. Paper trade survivors** | only a strategy that passes stage 4 → `alpaca_paper.py` for weeks | ⬜ |
@@ -31,11 +31,11 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started
 - **Broker/data:** Alpaca (Trading API, paper). Shared paper account via API keys. Setup: [[plan/08-alpaca-setup]].
 - **Data:** yfinance or Alpaca, daily, split/dividend-adjusted. Liquid equities/ETFs first (SPY/QQQ/IWM + large caps).
 - **Holding style:** swing (daily bars, hold days–weeks). Intraday = researched phase-2.
-- **Repo:** GitHub `10zinglunn-afk/tjh-trading`, branch `feat/webapp-v1`. Web app on Vercel; Supabase later (Phase B).
+- **Repo:** GitHub `10zinglunn-afk/tjh-trading`, branch `main` (feat/webapp-v1 merged 2026-07-02; work merges to main same session it stops). Web app on Vercel; Supabase later (Phase B).
 - **Collaboration:** Notion as the front door for Jonathan & Henry (theses, tasks, verdict view); repo canonical for code.
 
 ## Who's doing what next
-- **Tenzing:** choose + fetch the liquid universe; restyle web app to the mockup; wire Notion; (optional) build verdict auto-logger.
+- **Tenzing:** ✅ universe fetched · ✅ Notion wired · ✅ verdict auto-logger built (2026-07-02) · ✅ Kronos alignment fixed. Left: deploy web app v1 + restyle to the mockup; run Kronos for real.
 - **Jonathan:** first strategy thesis in `/research/` (the bottleneck — unblocks stages 3–4).
 - **Henry:** real cost table (bps per instrument) + tradable universe + interpret/benchmark verdicts. (Mechanical logging is being automated — see [[plan/01-decision-log]].)
 

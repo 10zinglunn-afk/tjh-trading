@@ -6,6 +6,7 @@ then a walk-forward (out-of-sample) test.
 """
 import os
 import sys
+from functools import partial
 import pandas as pd
 from data import synthetic_ohlcv, load_csv
 from costs import CostModel
@@ -14,6 +15,8 @@ from metrics import compute_metrics
 from strategies import (buy_and_hold, random_strategy, sma_crossover,
                         mean_reversion, kronos_signal)
 from walkforward import walk_forward
+from diagnostics import diagnose, config_sharpes
+from verdict_log import append_verdict
 
 
 def load_kronos_forecast(path):
@@ -27,6 +30,38 @@ def load_kronos_forecast(path):
     fc = pd.read_csv(sidecar, parse_dates=[0], index_col=0)["pred_ret"]
     print(f"(loaded Kronos forecast: {sidecar}, {int(fc.notna().sum())} forecasts)\n")
     return fc
+
+
+def log_wf_verdict(strategy, px, combined, chosen, grid, trial_sharpes, m, path):
+    """Append one machine-readable verdict row (plan/10 Part A). Records only what the
+    engine already computed; the judgment column stays human (Henry's)."""
+    if len(combined) == 0:
+        return
+    lo, hi = combined.index[0], combined.index[-1]
+    win = px.loc[lo:hi]
+    bh = float(win.iloc[-1] / win.iloc[0] - 1)
+    spy_ret, bench = None, px
+    if os.path.exists('realdata/spy.csv'):
+        spy = load_csv('realdata/spy.csv')['close']
+        s = spy.loc[lo:hi]
+        if len(s) > 1:
+            spy_ret, bench = float(s.iloc[-1] / s.iloc[0] - 1), spy
+    d = diagnose(combined, len(grid), benchmark=bench, trial_sharpes=trial_sharpes)
+    append_verdict({
+        'ticker': os.path.splitext(os.path.basename(path))[0] if path else 'synthetic',
+        'strategy': strategy, 'params': chosen,
+        'cost_regime': '3/1 bps (liquid ETF)',
+        'oos_total_return': m['total_return'], 'oos_sharpe': m['sharpe'],
+        'oos_max_dd': m['max_drawdown'], 'num_trades': m['num_trades'],
+        'buy_hold_return': bh, 'spy_return': spy_ret,
+        'beats_bh': bool(m['total_return'] > bh),
+        'deflated_sharpe': d['deflated_sharpe'], 'trades_per_fold': d['trades_per_fold'],
+        'per_year': d['per_year'], 'regime_split': d['regime_split'],
+        'red_flags': d['red_flags'],
+        'synthetic': path is None,
+    })
+    tag = ' [synthetic -- excluded from the real track record]' if path is None else ''
+    print(f"  verdict logged -> verdicts.jsonl{tag}")
 
 
 def fmt(m):
@@ -77,6 +112,8 @@ def main():
     m = compute_metrics(combined)
     print(f"  OOS combined   {fmt(m)}")
     print(f"  params/fold:   {[ (c['lookback'], c['entry_z']) for c in chosen ]}")
+    log_wf_verdict('meanrev_wf', px, combined, chosen, grid,
+                   config_sharpes(px, mean_reversion, grid, CostModel(3, 1)), m, path)
 
     if forecast is not None:
         print("\n=== WALK-FORWARD: KRONOS, threshold chosen OUT-OF-SAMPLE, ETF costs ===")
@@ -86,6 +123,9 @@ def main():
         km = compute_metrics(kcomb)
         print(f"  OOS combined   {fmt(km)}")
         print(f"  thresh/fold:   {[c['threshold'] for c in kchosen]}")
+        log_wf_verdict('kronos_wf', px, kcomb, kchosen, kgrid,
+                       config_sharpes(px, partial(kronos_signal, forecast=forecast),
+                                      kgrid, CostModel(3, 1)), km, path)
 
     print("\n(OOS = out-of-sample: the only row that isn't lying to you.)")
 

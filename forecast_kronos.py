@@ -91,8 +91,10 @@ def kronos_forecast(df, lookback, stride, device, model_name, tok_name,
     for t in range(lookback, end):
         if (t - lookback) % stride != 0:
             continue                               # strided: hold the previous forecast
-        x_df = df.iloc[t - lookback:t][cols].reset_index(drop=True)
-        x_ts = ts.iloc[t - lookback:t].reset_index(drop=True)
+        # context ends at bar t INCLUSIVE (iloc end is exclusive) -- pred_ret[t] must use
+        # info through t, matching mock_forecast and the kronos_signal contract
+        x_df = df.iloc[t - lookback + 1:t + 1][cols].reset_index(drop=True)
+        x_ts = ts.iloc[t - lookback + 1:t + 1].reset_index(drop=True)
         y_ts = pd.Series([df.index[t] + step])     # the t+1 timestamp
         out = predictor.predict(df=x_df, x_timestamp=x_ts, y_timestamp=y_ts,
                                 pred_len=1, T=temperature, top_p=top_p,

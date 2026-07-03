@@ -34,7 +34,10 @@ red flags. This is what makes Henry's reframed role possible. Flags GUIDE; they 
 **Status: BUILT — `diagnostics.py`.** Deflated Sharpe (Bailey–López de Prado), per-year
 return+Sharpe, trades/fold, SPY-regime split, and `red_flags()` are implemented and wired into
 `scan.py` as the Gate-3 filter (`EDGE?` requires deflated Sharpe ≥0.95); a `sanity_check.py`
-guard asserts noise can't manufacture significance. **Part A (verdict auto-logger) is still TODO.**
+guard asserts noise can't manufacture significance. **Part A: BUILT 2026-07-02 — `verdict_log.py`.**
+Every real `run.py` walk-forward appends to `verdicts.jsonl` (synthetic runs tagged and
+excluded); `python3 verdict_log.py --write-md plan/02-verdict-log.md` renders the AUTO
+section. The Judgment column stays human.
 
 **Implement in a new `diagnostics.py`, computed from the walk-forward output:**
 1. **Per-year (and per-fold) return + Sharpe.** A small table/series. If all the edge comes
