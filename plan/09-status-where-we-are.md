@@ -18,8 +18,8 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started
 | **2. Real data in** | adjusted daily bars via `fetch_data.py` (yfinance) or `fetch_alpaca.py` | 🟡 (53-ticker provisional universe fetched via `fetch_universe.py`; Henry to ratify) |
 | **3. First reasoned strategy** | Jonathan writes a thesis with a *why*; Tenzing implements it | ⬜ **(the current bottleneck)** |
 | **4. Run + verdict** | run harness on a liquid ticker, record OOS-net-of-costs vs SPY | 🟡 (verdict auto-logger live — `verdicts.jsonl`; wide scan logged: 0/106 clean edges; no *reasoned* strategy run yet) |
-| **5. Web app v1** | Next.js + FastAPI visualizer; restyle to `webapp/MOCKUP.html` | 🟡 (works; ugly — mockup is the target) |
-| **6. Kronos for real** | run `forecast_kronos.py` non-mock on real tickers, read OOS row | ⬜ |
+| **5. Web app v1** | Next.js + FastAPI visualizer; restyle to `webapp/MOCKUP.html` | 🟡 (frontend LIVE on Vercel: https://webapp-zeta-liart.vercel.app — shell until backend hosted; `render.yaml` ready. Still ugly — mockup is the target) |
+| **6. Kronos for real** | run `forecast_kronos.py` non-mock on real tickers, read OOS row | ⏸️ **PARKED** — Kronos is strongest *intraday*; we trade *daily swing*. Only revisit if we ever choose to go intraday (phase-2 scope change, not made). See [[plan/01-decision-log]]. |
 | **7. Paper trade survivors** | only a strategy that passes stage 4 → `alpaca_paper.py` for weeks | ⬜ |
 | **8. Real money** | deferred decision; nothing until a survivor proves out on paper | ⬜ |
 
@@ -35,7 +35,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started
 - **Collaboration:** Notion as the front door for Jonathan & Henry (theses, tasks, verdict view); repo canonical for code.
 
 ## Who's doing what next
-- **Tenzing:** ✅ universe fetched · ✅ Notion wired · ✅ verdict auto-logger built (2026-07-02) · ✅ Kronos alignment fixed. Left: deploy web app v1 + restyle to the mockup; run Kronos for real.
+- **Tenzing:** ✅ universe fetched · ✅ Notion wired · ✅ verdict auto-logger built (2026-07-02) · ✅ Kronos alignment fixed · ✅ web app frontend deployed to Vercel (2026-07-02). Left: host the backend (`render.yaml` ready) + set `NEXT_PUBLIC_API_URL` in Vercel; restyle to the mockup. Kronos parked (see decision log).
 - **Jonathan:** first strategy thesis in `/research/` (the bottleneck — unblocks stages 3–4).
 - **Henry:** real cost table (bps per instrument) + tradable universe + interpret/benchmark verdicts. (Mechanical logging is being automated — see [[plan/01-decision-log]].)
 

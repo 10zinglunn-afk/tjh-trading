@@ -8,6 +8,29 @@ When a decision changes, add a NEW entry that supersedes the old one (don't dele
 
 ---
 
+### 2026-07-02 — Park Kronos; it's intraday-strongest and we trade daily swing
+**Decision:** Stop treating a real Kronos run as a near-term action. Kronos (zero-shot,
+`forecast_kronos.py`) is strongest on **intraday** bars; our locked strategy style is
+**daily swing** (charter [[plan/07-charter-what-we-do]]). Running it zero-shot on daily bars
+is an expected "no edge" that answers a question we don't need answered, so it drops below
+Jonathan's thesis in priority. **Revisit only** if we deliberately choose to go intraday
+(a phase-2 scope change not yet made). The alignment fix and plumbing stay in the repo so the
+run is one command away if that decision flips.
+**Why:** Tenzing flagged the timeframe mismatch — spending a torch install + an evening on a
+tool mismatched to our horizon is low-value work. Supersedes the "run Kronos for real" framing
+in the 2026-06-27 "zero-shot Kronos first" decision (that decision still holds *if* we go intraday).
+**Who:** Tenzing.
+
+### 2026-07-02 — Web app frontend deployed to Vercel (production)
+**Decision:** The Next.js visualizer is live at https://webapp-zeta-liart.vercel.app (deployed
+from the `webapp/` root, not the repo root). It is a **shell until the backend is hosted** —
+`api_server.py` (FastAPI) can't run on Vercel, so it goes on a Python host (`render.yaml`
+blueprint added for Render's free tier), and the Vercel env var `NEXT_PUBLIC_API_URL` points
+the frontend at it. No backtest math ever runs in the browser.
+**Why:** The deployed URL is the engagement unlock for Jonathan & Henry (they judge realness by
+a live app). Engine work was gated first and is now done, so deploy was the next move.
+**Who:** Tenzing.
+
 ### 2026-07-02 — Work merges to `main` the same session it stops; `main` is the only truth
 **Decision:** No long-lived feature branches. Whatever is done at the end of a work session
 gets merged to `main` and pushed. Status pages (Notion, plan/09) are always written from `main`.

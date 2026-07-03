@@ -1,0 +1,17 @@
+# One-click backend host for the harness API (api_server.py).
+# Render reads this Blueprint automatically. To deploy:
+#   1. render.com -> New -> Blueprint -> connect 10zinglunn-afk/tjh-trading
+#   2. It reads this file, builds, and gives you a public URL like https://tjh-trading-api.onrender.com
+#   3. Put that URL into Vercel as NEXT_PUBLIC_API_URL, and set ALLOWED_ORIGINS here to your Vercel URL.
+services:
+  - type: web
+    name: tjh-trading-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements-api.txt
+    startCommand: uvicorn api_server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      # Set this in the Render dashboard to your Vercel URL (comma-separated) to lock down CORS.
+      # Leave unset and it defaults to "*" (fine to start; tighten once the Vercel URL is known).
+      - key: ALLOWED_ORIGINS
+        sync: false
