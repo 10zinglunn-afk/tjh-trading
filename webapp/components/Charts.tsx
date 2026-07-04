@@ -7,14 +7,22 @@ import {
 import type { StrategyResult } from "@/lib/api";
 
 const COL = {
-  price: "#5b9dff",
-  net: "#38d39f",
-  gross: "#7d8aa3",
-  bh: "#ffb454",
-  good: "#38d39f",
-  bad: "#ff5d6c",
-  grid: "#222a38",
-  axis: "#6b7488",
+  price: "#1a1a1a",
+  net: "#d4483b",
+  gross: "#9a9a9a",
+  bh: "#2e9e5b",
+  good: "#2e9e5b",
+  bad: "#d4483b",
+  grid: "#e3e3e0",
+  axis: "#999",
+};
+
+const TOOLTIP = {
+  background: "#fff",
+  border: "1px solid #e3e3e0",
+  borderRadius: 8,
+  fontSize: 12,
+  color: "#1a1a1a",
 };
 
 function fmtDate(d: string) {
@@ -49,8 +57,8 @@ export function PriceChart({
         <YAxis domain={["auto", "auto"]} tick={{ fill: COL.axis, fontSize: 11 }}
           stroke={COL.grid} width={48} />
         <Tooltip
-          contentStyle={{ background: "#11161f", border: "1px solid #28303f", borderRadius: 8, fontSize: 12 }}
-          labelStyle={{ color: "#8a93a6" }} />
+          contentStyle={TOOLTIP}
+          labelStyle={{ color: "#666" }} />
         <Line type="monotone" dataKey="close" stroke={COL.price} dot={false} strokeWidth={1.6}
           name="Price" isAnimationActive={false} />
         <Scatter dataKey="longEntry" fill={COL.good} name="Long entry"
@@ -86,9 +94,9 @@ export function PositionStrip({
         <YAxis domain={[-1.1, 1.1]} hide />
         <ReferenceLine y={0} stroke={COL.grid} />
         <Tooltip
-          contentStyle={{ background: "#11161f", border: "1px solid #28303f", borderRadius: 8, fontSize: 12 }}
+          contentStyle={TOOLTIP}
           formatter={(v: number) => [v > 0 ? "long" : v < 0 ? "short" : "flat", "position"]}
-          labelStyle={{ color: "#8a93a6" }} />
+          labelStyle={{ color: "#666" }} />
         <Area type="stepAfter" dataKey="pos" stroke="none" fill="url(#posfill)"
           isAnimationActive={false} />
       </AreaChart>
@@ -118,9 +126,9 @@ export function EquityChart({
         <YAxis tick={{ fill: COL.axis, fontSize: 11 }} stroke={COL.grid} width={48}
           tickFormatter={(v) => `${v.toFixed(1)}x`} />
         <Tooltip
-          contentStyle={{ background: "#11161f", border: "1px solid #28303f", borderRadius: 8, fontSize: 12 }}
+          contentStyle={TOOLTIP}
           formatter={(v: number) => (v == null ? "—" : `${v.toFixed(3)}x`)}
-          labelStyle={{ color: "#8a93a6" }} />
+          labelStyle={{ color: "#666" }} />
         <ReferenceLine y={1} stroke={COL.grid} />
         <Line type="monotone" dataKey="gross" stroke={COL.gross} dot={false} strokeWidth={1.2}
           strokeDasharray="4 3" name="Strategy (frictionless)" isAnimationActive={false} />

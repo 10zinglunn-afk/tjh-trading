@@ -31,6 +31,17 @@ def mean_reversion(prices, lookback=20, entry_z=1.0, **kw):
     return pos.fillna(0.0)
 
 
+def time_series_momentum(prices, lookback=252, skip=21, **kw):
+    """Absolute (time-series) momentum: long when the trailing return over `lookback`
+    bars (excluding the most recent `skip` bars, per the classic 12-1 construction)
+    is positive, else flat. Economic story: trend persistence / investor underreaction
+    (Moskowitz-Ooi-Pedersen 2012). Single-series -- this is the engine-compatible
+    cousin of cross-sectional momentum, which needs a panel and lives in xsect.py."""
+    past = prices.shift(skip)
+    mom = past / past.shift(lookback - skip) - 1.0
+    return (mom > 0).astype(float)
+
+
 def kronos_signal(prices, forecast=None, threshold=0.0, **kw):
     """Turn a CACHED Kronos forecast into a position. Reads the precomputed next-bar
     return forecast (from forecast_kronos.py) -- it NEVER calls the model here, which

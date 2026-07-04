@@ -6,19 +6,26 @@ import {
   type Results, type TickerInfo,
 } from "@/lib/api";
 import { PriceChart, PositionStrip, EquityChart } from "@/components/Charts";
+import { TrackRecord } from "@/components/TrackRecord";
 
 // strategy id -> walk-forward key in the payload (only tuned strategies have one)
 const WF_KEY: Record<string, string> = { meanrev_20_1: "mean_reversion", kronos: "kronos" };
 
+// Real data first: SPY is fetched live by the backend (yfinance). If that fails
+// (backend asleep, rate-limited), we fall back to the synthetic teaching fixture.
+const DEFAULT_TICKER = "spy";
+
 export default function Home() {
   const [tickers, setTickers] = useState<TickerInfo[]>([]);
-  const [ticker, setTicker] = useState("synthetic");
+  const [ticker, setTicker] = useState(DEFAULT_TICKER);
   const [strategy, setStrategy] = useState("meanrev_20_1");
   const [spread, setSpread] = useState(3);
   const [slippage, setSlippage] = useState(1);
   const [res, setRes] = useState<Results | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [fellBack, setFellBack] = useState(false);
+  const everLoaded = useRef(false);
   const debounce = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
@@ -34,10 +41,19 @@ export default function Home() {
       setErr(null);
       fetchRun({ ticker, spread_bps: spread, slippage_bps: slippage })
         .then((r) => {
+          everLoaded.current = true;
           setRes(r);
           if (!r.strategies[strategy]) setStrategy(Object.keys(r.strategies)[0]);
         })
-        .catch((e) => setErr(e.message))
+        .catch((e) => {
+          if (!everLoaded.current && ticker === DEFAULT_TICKER) {
+            // First load and real data unavailable -> demo fixture instead of an error page.
+            setFellBack(true);
+            setTicker("synthetic");
+          } else {
+            setErr(e.message);
+          }
+        })
         .finally(() => setLoading(false));
     }, 250);
     return () => clearTimeout(debounce.current);
@@ -46,6 +62,7 @@ export default function Home() {
   const strat = res?.strategies[strategy];
   const displayRegime = res?.meta.display_regime ?? "custom";
   const wf = res && WF_KEY[strategy] ? res.walk_forward[WF_KEY[strategy]] : undefined;
+  const isSynthetic = ticker === "synthetic";
 
   const verdict = useMemo(() => {
     if (!res || !wf?.oos_metrics) return null;
@@ -58,61 +75,54 @@ export default function Home() {
 
   return (
     <div className="container">
-      <header className="header" style={{ marginBottom: 20 }}>
-        <h1>The Skeptic&apos;s Machine</h1>
-        <p>
-          A pretty signal is not a real edge. Pick a strategy, then watch it look good with
-          no costs and fall apart once you pay real spreads and test it out-of-sample. Every
-          number here is computed by the canonical Python harness — nothing is faked in the browser.
-        </p>
-      </header>
-
-      {/* Controls */}
-      <div className="panel" style={{ marginBottom: 16 }}>
-        <div className="controls">
-          <div className="field">
-            <label>Ticker</label>
+      <div className="sm-top">
+        <div className="sm-title">The Skeptic&apos;s Machine <span>· visualizer v1</span></div>
+        <div className="sm-pickers">
+          <span className="sm-pill">Ticker:{" "}
             <select value={ticker} onChange={(e) => setTicker(e.target.value)}>
+              {!tickers.some((t) => t.id === ticker) && (
+                <option value={ticker}>{ticker.toUpperCase()}</option>
+              )}
               {tickers.map((t) => (
                 <option key={t.id} value={t.id}>{t.label}</option>
               ))}
             </select>
-          </div>
-          <div className="field">
-            <label>Strategy</label>
+          </span>
+          <span className="sm-pill">Strategy:{" "}
             <select value={strategy} onChange={(e) => setStrategy(e.target.value)}>
               {res &&
                 Object.entries(res.strategies).map(([id, s]) => (
                   <option key={id} value={id}>{s.label}</option>
                 ))}
             </select>
-          </div>
-          <div className="field">
-            <label>Spread: {spread} bps</label>
-            <input type="range" min={0} max={400} step={1} value={spread}
-              onChange={(e) => setSpread(Number(e.target.value))} />
-          </div>
-          <div className="field">
-            <label>Slippage: {slippage} bps</label>
-            <input type="range" min={0} max={100} step={1} value={slippage}
-              onChange={(e) => setSlippage(Number(e.target.value))} />
-          </div>
-          <div className="field">
-            <label>&nbsp;</label>
-            <span className="pill">
-              {loading ? "running…" : res ? `${res.meta.bars} bars · ${res.meta.start} → ${res.meta.end}` : ""}
-            </span>
-          </div>
+          </span>
+          <span className="sm-pill tertiary">
+            {loading ? "running…" : res ? `${res.meta.bars} bars · ${res.meta.start} → ${res.meta.end}` : ""}
+          </span>
         </div>
-        {strat && <p className="muted" style={{ margin: "12px 2px 0" }}>{strat.description}</p>}
       </div>
+      <p className="sm-sub">
+        A pretty signal is not a real edge. Pick a strategy, watch it look good with no costs,
+        then watch it fall apart once it pays real spreads and is tested out-of-sample. Every
+        number is computed by the canonical Python harness — the browser only draws.
+      </p>
 
-      {err && <div className="banner warn err" style={{ marginBottom: 16 }}>{err}</div>}
+      {err && <div className="banner warn err" style={{ marginBottom: 12 }}>{err}</div>}
+
+      {isSynthetic && res && (
+        <div className="banner warn" style={{ marginBottom: 12 }}>
+          <strong>Synthetic teaching fixture</strong> — this series has a mean-reversion edge
+          deliberately baked in (it is how we verify the machine can detect a real edge).
+          Any &quot;SURVIVES&quot; verdict here is the fixture flattering itself, not research.
+          {fellBack && " (Shown because live SPY data was unavailable — the free backend sleeps when idle; retry in ~1 min.)"}
+          {" "}The real track record is at the bottom of this page.
+        </div>
+      )}
 
       {res && res.data_quality.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
           {res.data_quality.map((d, i) => (
-            <div key={i} className={`banner ${d.level === "warn" ? "warn" : "info"}`}>
+            <div key={i} className={`banner ${d.level === "warn" ? "warn" : ""}`}>
               <strong>{d.code}</strong> — {d.message}
             </div>
           ))}
@@ -120,74 +130,51 @@ export default function Home() {
       )}
 
       {strat && res && (
-        <>
-          {/* Price + signal */}
-          <div className="panel grow" style={{ marginBottom: 16 }}>
-            <p className="section-title">Price &amp; signal — {strat.label}</p>
-            <PriceChart dates={res.prices.dates} close={res.prices.close} strat={strat} />
-            <PositionStrip dates={res.prices.dates} positions={strat.positions} />
-            <div className="legend" style={{ marginTop: 6 }}>
-              <span><span className="swatch" style={{ background: "#5b9dff" }} />Price</span>
-              <span><span className="swatch" style={{ background: "#38d39f" }} />Long entry / held long</span>
-              <span><span className="swatch" style={{ background: "#ff5d6c" }} />Short entry / held short</span>
-            </div>
-          </div>
-
-          {/* Equity */}
-          <div className="panel" style={{ marginBottom: 16 }}>
-            <p className="section-title">
-              Growth of $1 — strategy net of costs vs buy &amp; hold (costs: {spread}/{slippage} bps)
-            </p>
-            <EquityChart
-              dates={res.prices.dates}
-              stratNet={strat.equity.net}
-              stratGross={strat.equity.gross}
-              buyHoldNet={res.strategies["buy_and_hold"].equity.net}
-            />
-            <div className="legend" style={{ marginTop: 6 }}>
-              <span><span className="swatch" style={{ background: "#38d39f" }} />Strategy (net of costs)</span>
-              <span><span className="swatch" style={{ background: "#ffb454" }} />Buy &amp; hold</span>
-              <span><span className="swatch" style={{ background: "#7d8aa3" }} />Strategy (frictionless — the lie)</span>
-            </div>
-          </div>
-
-          <div className="row">
-            {/* Verdict / OOS */}
-            <div className="panel grow" style={{ flexBasis: 420 }}>
-              <p className="section-title">Out-of-sample verdict (walk-forward)</p>
-              {wf ? (
-                <>
-                  <div className="verdict" style={{ marginBottom: 14 }}>
-                    <span className={`tag ${verdict?.survives ? "advance" : "kill"}`}>
-                      {verdict?.survives ? "SURVIVES OOS" : "KILL"}
-                    </span>
-                    <span className="muted">
-                      params chosen on train only, scored on unseen test · {wf.params_per_fold.length} folds
-                    </span>
-                  </div>
-                  <div className="metric-grid">
-                    <Metric k="OOS return" v={pct(wf.oos_metrics.total_return)} sign={wf.oos_metrics.total_return} />
-                    <Metric k="Sharpe" v={num(wf.oos_metrics.sharpe)} sign={wf.oos_metrics.sharpe} />
-                    <Metric k="Max DD" v={pct(wf.oos_metrics.max_drawdown)} sign={-1} />
-                    <Metric k="Trades" v={String(wf.oos_metrics.num_trades ?? "—")} />
-                    <Metric k="Win rate" v={pct(wf.oos_metrics.win_rate)} />
-                  </div>
-                  <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
-                    Buy &amp; hold over the same series returned {pct(verdict?.bh)}. The only honest
-                    question: does the OOS net-of-cost number beat that? Usually it does not.
-                  </p>
-                </>
-              ) : (
-                <p className="muted">
-                  No walk-forward for this strategy — it has no tunable parameters
-                  (buy&amp;hold and random are baselines, not edges to validate).
-                </p>
-              )}
+        <div className="sm-grid">
+          <div className="sm-col">
+            <div className="sm-card">
+              <div className="sm-card-h">① Price + signal — {strat.label}
+                <span>▲ long entry · ▼ short entry · strip = held position</span>
+              </div>
+              <PriceChart dates={res.prices.dates} close={res.prices.close} strat={strat} />
+              <PositionStrip dates={res.prices.dates} positions={strat.positions} />
             </div>
 
-            {/* Cost regime table */}
-            <div className="panel grow" style={{ flexBasis: 420 }}>
-              <p className="section-title">What costs do to {strat.label}</p>
+            <div className="sm-card">
+              <div className="sm-card-h">② Growth of $1, net of costs
+                <span>costs: {spread}/{slippage} bps</span>
+              </div>
+              <EquityChart
+                dates={res.prices.dates}
+                stratNet={strat.equity.net}
+                stratGross={strat.equity.gross}
+                buyHoldNet={res.strategies["buy_and_hold"].equity.net}
+              />
+              <div className="sm-legend">
+                <span><i style={{ background: "#d4483b" }} />Strategy, after costs</span>
+                <span><i style={{ background: "#2e9e5b" }} />Buy &amp; hold</span>
+                <span><i style={{ background: "#9a9a9a" }} />Strategy, frictionless (the lie)</span>
+              </div>
+            </div>
+
+            <div className="sm-card">
+              <div className="sm-card-h">③ Cost assumptions <span>drag → everything recomputes in Python</span></div>
+              <div className="sm-slider">
+                <label>Spread</label>
+                <input type="range" min={0} max={400} step={1} value={spread}
+                  onChange={(e) => setSpread(Number(e.target.value))} />
+                <span className="val">{spread.toFixed(1)} bps</span>
+              </div>
+              <div className="sm-slider">
+                <label>Slippage</label>
+                <input type="range" min={0} max={100} step={1} value={slippage}
+                  onChange={(e) => setSlippage(Number(e.target.value))} />
+                <span className="val">{slippage.toFixed(1)} bps</span>
+              </div>
+            </div>
+
+            <div className="sm-card">
+              <div className="sm-card-h">What costs do to {strat.label}</div>
               <table>
                 <thead>
                   <tr><th>Cost regime</th><th>Return</th><th>Sharpe</th><th>Trades</th></tr>
@@ -206,32 +193,75 @@ export default function Home() {
                   })}
                 </tbody>
               </table>
-              <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
+              <p className="muted" style={{ marginTop: 10, marginBottom: 2, fontSize: 11.5 }}>
                 Frictionless is the lie. The cheap-option row (300/50 bps) is why naive options
-                trading is ruin. Drag the sliders to set your own assumption.
+                trading is ruin.
               </p>
             </div>
           </div>
-        </>
+
+          <div className="sm-col">
+            <div className="sm-card" style={{ display: "flex", flexDirection: "column" }}>
+              <div className="sm-card-h">④ Verdict <span>OOS, net of costs</span></div>
+              {wf ? (
+                <>
+                  <div className={`sm-badge ${verdict?.survives ? "sm-live" : "sm-dead"}`}>
+                    {verdict?.survives ? "SURVIVES OOS ✓" : "DEAD ✕"}
+                  </div>
+                  <div className="sm-verdict-sub">
+                    {verdict?.survives
+                      ? "Beats buy & hold OOS after costs on this series — but see the caveats in the track record before believing it."
+                      : "Does not beat buy & hold out-of-sample after costs."}
+                    {" "}Params chosen on train only · {wf.params_per_fold.length} folds.
+                  </div>
+                  <div className="sm-metrics">
+                    <MetricRow k="OOS return" v={pct(wf.oos_metrics.total_return)} sign={wf.oos_metrics.total_return} />
+                    <MetricRow k="Buy & hold" v={pct(verdict?.bh)} sign={verdict?.bh} />
+                    <MetricRow k="Sharpe" v={num(wf.oos_metrics.sharpe)} />
+                    <MetricRow k="Max drawdown" v={pct(wf.oos_metrics.max_drawdown)} sign={-1} />
+                    <MetricRow k="Trades" v={String(wf.oos_metrics.num_trades ?? "—")} />
+                    <MetricRow k="Win rate" v={pct(wf.oos_metrics.win_rate)} />
+                  </div>
+                </>
+              ) : (
+                <p className="muted" style={{ margin: 0, fontSize: 12 }}>
+                  No walk-forward for this strategy — it has no tunable parameters
+                  (buy&amp;hold and random are baselines, not edges to validate).
+                </p>
+              )}
+            </div>
+
+            <div className="sm-card">
+              <div className="sm-card-h">The one rule</div>
+              <p className="muted" style={{ margin: 0, fontSize: 12, lineHeight: 1.5 }}>
+                A strategy is only real if it beats buy-and-hold <em>and</em> random,
+                out-of-sample, net of costs, on real data. Almost nothing does —
+                that&apos;s the point of the machine.
+              </p>
+            </div>
+          </div>
+        </div>
       )}
 
-      {!res && !err && <p className="spinner" style={{ marginTop: 24 }}>Loading the harness…</p>}
+      {!res && !err && <p className="spinner" style={{ marginTop: 24 }}>Waking the harness (free backend sleeps when idle — up to ~1 min)…</p>}
 
-      <footer style={{ marginTop: 40 }} className="muted">
-        Source of truth: the Python harness (<code>costs.py</code>, <code>backtest.py</code>,
-        <code> walkforward.py</code>). No-lookahead is enforced in the engine
+      <TrackRecord />
+
+      <div className="sm-foot">
+        Source of truth: the Python harness (<code>costs.py</code>, <code>backtest.py</code>,{" "}
+        <code>walkforward.py</code>). No-lookahead is enforced in the engine
         (<code>positions.shift(1)</code>); the browser only displays what Python computed.
-      </footer>
+      </div>
     </div>
   );
 }
 
-function Metric({ k, v, sign }: { k: string; v: string; sign?: number | null }) {
-  const cls = sign == null ? "" : sign >= 0 ? "good" : "bad";
+function MetricRow({ k, v, sign }: { k: string; v: string; sign?: number | null }) {
+  const cls = sign == null ? "" : sign >= 0 ? "pos" : "neg";
   return (
-    <div className="metric">
-      <div className="k">{k}</div>
-      <div className={`v ${cls}`}>{v}</div>
+    <div>
+      <span>{k}</span>
+      <b className={cls}>{v}</b>
     </div>
   );
 }

@@ -1,0 +1,195 @@
+{
+ "generated": "2026-07-03",
+ "wide_scan": {
+  "n_backtests": 159,
+  "n_tickers": 53,
+  "strategies": [
+   "sma",
+   "meanrev",
+   "tsmom"
+  ],
+  "edges": 0,
+  "suspects": 23,
+  "dead": 136,
+  "top": [
+   {
+    "ticker": "NVDA",
+    "strategy": "sma",
+    "oos_return": 31.910438920475464,
+    "sharpe": 1.3795632117359045,
+    "trades_per_fold": 1.2,
+    "dsr": 0.9991602189823279,
+    "verdict": "dead",
+    "red_flags": [
+     "Only 1 trades/fold -- Sharpe may be luck, not skill."
+    ]
+   },
+   {
+    "ticker": "NVDA",
+    "strategy": "tsmom",
+    "oos_return": 29.65250597506513,
+    "sharpe": 1.3670708123046937,
+    "trades_per_fold": 9.0,
+    "dsr": 0.999717492223128,
+    "verdict": "dead",
+    "red_flags": [
+     "Only 9 trades/fold -- Sharpe may be luck, not skill."
+    ]
+   },
+   {
+    "ticker": "NIO",
+    "strategy": "tsmom",
+    "oos_return": 14.109748623372823,
+    "sharpe": 1.0827277812324303,
+    "trades_per_fold": 4.2,
+    "dsr": 0.9882742617734959,
+    "verdict": "suspect",
+    "red_flags": [
+     "Only 4 trades/fold -- Sharpe may be luck, not skill.",
+     "91% of the return came from 2020 -- a one-year wonder."
+    ]
+   },
+   {
+    "ticker": "TSLA",
+    "strategy": "tsmom",
+    "oos_return": 13.905296718274204,
+    "sharpe": 1.0139188466273483,
+    "trades_per_fold": 6.0,
+    "dsr": 0.9954812619516438,
+    "verdict": "dead",
+    "red_flags": [
+     "Only 6 trades/fold -- Sharpe may be luck, not skill.",
+     "79% of the return came from 2020 -- a one-year wonder.",
+     "Edge only shows in the 'up' regime -- fragile, not robust."
+    ]
+   },
+   {
+    "ticker": "TSLA",
+    "strategy": "sma",
+    "oos_return": 9.218865783321398,
+    "sharpe": 0.9223502531644235,
+    "trades_per_fold": 3.2,
+    "dsr": 0.9693393564631848,
+    "verdict": "dead",
+    "red_flags": [
+     "Only 3 trades/fold -- Sharpe may be luck, not skill.",
+     "92% of the return came from 2020 -- a one-year wonder.",
+     "Edge only shows in the 'up' regime -- fragile, not robust."
+    ]
+   },
+   {
+    "ticker": "AVGO",
+    "strategy": "tsmom",
+    "oos_return": 6.574420436226058,
+    "sharpe": 0.9470708154963944,
+    "trades_per_fold": 8.0,
+    "dsr": 0.9920568564994331,
+    "verdict": "dead",
+    "red_flags": [
+     "Only 8 trades/fold -- Sharpe may be luck, not skill.",
+     "Edge only shows in the 'up' regime -- fragile, not robust."
+    ]
+   },
+   {
+    "ticker": "LLY",
+    "strategy": "tsmom",
+    "oos_return": 5.55550186259993,
+    "sharpe": 1.0663825817776182,
+    "trades_per_fold": 6.2,
+    "dsr": 0.9939064236752395,
+    "verdict": "dead",
+    "red_flags": [
+     "Only 6 trades/fold -- Sharpe may be luck, not skill."
+    ]
+   },
+   {
+    "ticker": "AMD",
+    "strategy": "sma",
+    "oos_return": 4.694407567411179,
+    "sharpe": 0.8144975925748278,
+    "trades_per_fold": 3.6,
+    "dsr": 0.9768659773838069,
+    "verdict": "dead",
+    "red_flags": [
+     "Only 4 trades/fold -- Sharpe may be luck, not skill."
+    ]
+   }
+  ]
+ },
+ "thesis_001": {
+  "spec": "12-1 cross-sectional momentum, monthly, top 10 of 47 stocks, long-only, equal weight, n_trials=1",
+  "window": [
+   "2019-08-01",
+   "2026-06-30"
+  ],
+  "momentum": {
+   "total_return": 7.562878562482791,
+   "cagr": 0.3655334788426803,
+   "sharpe": 1.2034261956281638,
+   "max_dd": -0.35280406472003345
+  },
+  "ew_universe": {
+   "total_return": 2.976042935158134,
+   "cagr": 0.22170680785864194,
+   "sharpe": 1.0279217163741268,
+   "max_dd": -0.3276606769873812
+  },
+  "spy": {
+   "total_return": 1.8045098673546307,
+   "cagr": 0.1613792664909246,
+   "sharpe": 0.8500599660219604,
+   "max_dd": -0.33717280807808125
+  },
+  "per_year": [
+   {
+    "year": 2019,
+    "momentum": 0.0998296735994415,
+    "ew_universe": 0.15230871752209918
+   },
+   {
+    "year": 2020,
+    "momentum": 1.4876788229128781,
+    "ew_universe": 0.5064059520140354
+   },
+   {
+    "year": 2021,
+    "momentum": 0.1823860046862107,
+    "ew_universe": 0.3276172832126212
+   },
+   {
+    "year": 2022,
+    "momentum": -0.04929594672162663,
+    "ew_universe": -0.20779917244805957
+   },
+   {
+    "year": 2023,
+    "momentum": 0.3705420034273481,
+    "ew_universe": 0.34868828023455567
+   },
+   {
+    "year": 2024,
+    "momentum": 0.27240227109842263,
+    "ew_universe": 0.19282598946863416
+   },
+   {
+    "year": 2025,
+    "momentum": 0.17599345365612584,
+    "ew_universe": 0.23084157331625388
+   },
+   {
+    "year": 2026,
+    "momentum": 0.3576059325249499,
+    "ew_universe": 0.09986953412777777
+   }
+  ],
+  "status": "SURVIVES first panel test \u2014 pending Jonathan sign-off + per-regime checks + paper trading",
+  "caveats": [
+   "universe is survivorship-biased (today's liquid names)",
+   "single history, no parameter search (nothing to overfit, but only one draw)"
+  ]
+ },
+ "verdict_log": {
+  "n_real": 1,
+  "n_synthetic": 1
+ }
+}

@@ -32,7 +32,8 @@ import time
 from data import load_csv
 from costs import CostModel
 from metrics import compute_metrics
-from strategies import buy_and_hold, random_strategy, sma_crossover, mean_reversion
+from strategies import (buy_and_hold, random_strategy, sma_crossover, mean_reversion,
+                        time_series_momentum)
 from walkforward import walk_forward
 from diagnostics import diagnose, config_sharpes
 
@@ -48,6 +49,10 @@ CANDIDATES = {
     'meanrev': (mean_reversion,
                 [{'lookback': lb, 'entry_z': z}
                  for lb in (10, 20, 40) for z in (0.5, 1.0, 1.5, 2.0)]),
+    # First REASONED strategy (Thesis 001 family): trend persistence has a documented
+    # economic story. Small grid on purpose -- 12-1 is the canonical spec, not a search.
+    'tsmom':   (time_series_momentum,
+                [{'lookback': lb, 'skip': 21} for lb in (126, 252)]),
 }
 # Baselines -- the bar every candidate must clear, run through the SAME folds.
 BASELINES = {
