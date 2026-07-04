@@ -16,16 +16,18 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started
 |------|----------------|:--:|
 | **1. Harness** | costs/backtest/walkforward/metrics; no-lookahead verified | ✅ |
 | **2. Real data in** | adjusted daily bars via `fetch_data.py` (yfinance) or `fetch_alpaca.py` | 🟡 (53-ticker provisional universe fetched via `fetch_universe.py`; Henry to ratify) |
-| **3. First reasoned strategy** | Jonathan writes a thesis with a *why*; Tenzing implements it | ⬜ **(the current bottleneck)** |
-| **4. Run + verdict** | run harness on a liquid ticker, record OOS-net-of-costs vs SPY | 🟡 (verdict auto-logger live — `verdicts.jsonl`; wide scan logged: 0/106 clean edges; no *reasoned* strategy run yet) |
-| **5. Web app v1** | Next.js + FastAPI visualizer; restyle to `webapp/MOCKUP.html` | 🟡 (frontend LIVE on Vercel: https://webapp-zeta-liart.vercel.app — shell until backend hosted; `render.yaml` ready. Still ugly — mockup is the target) |
+| **3. First reasoned strategy** | Jonathan writes a thesis with a *why*; Tenzing implements it | 🟡 (Thesis 001 IMPLEMENTED + RUN 2026-07-03 — `xsect.py` panel engine + `time_series_momentum`; **awaiting Jonathan's signature** to close the loop) |
+| **4. Run + verdict** | run harness on a liquid ticker, record OOS-net-of-costs vs SPY | 🟡 (Thesis 001 **SURVIVES first panel test** — +756% vs +298% EW-universe, won 5/8 years, see [[plan/02-verdict-log]]; wide scan v2 w/ tsmom: 0/159 clean single-name edges. Henry's judgment + Jonathan sign-off before ADVANCE) |
+| **5. Web app v1** | Next.js + FastAPI visualizer; restyle to `webapp/MOCKUP.html` | ✅ (LIVE full-stack: https://webapp-zeta-liart.vercel.app + Render backend. 2026-07-03: restyled to mockup, defaults to real SPY, shows the real track record + Thesis 001) |
 | **6. Kronos for real** | run `forecast_kronos.py` non-mock on real tickers, read OOS row | ⏸️ **PARKED** — Kronos is strongest *intraday*; we trade *daily swing*. Only revisit if we ever choose to go intraday (phase-2 scope change, not made). See [[plan/01-decision-log]]. |
 | **7. Paper trade survivors** | only a strategy that passes stage 4 → `alpaca_paper.py` for weeks | ⬜ |
 | **8. Real money** | deferred decision; nothing until a survivor proves out on paper | ⬜ |
 
 ## The one thing blocking everything
-**No reasoned strategy has been run through the harness on a real liquid ticker yet.** Tooling
-(brokers, Notion, data vendors) is mostly decided. The unlock is stage 3 → 4, not more setup.
+**Human sign-offs, not the machine.** The first reasoned strategy (Thesis 001,
+cross-sectional momentum) is implemented AND run — it survives its first panel test.
+What's missing is people: Jonathan signs the thesis, Henry judges the verdict
+(real-or-survivorship), then paper trading via `alpaca_paper.py` (needs Alpaca keys).
 
 ## Stack (decided)
 - **Broker/data:** Alpaca (Trading API, paper). Shared paper account via API keys. Setup: [[plan/08-alpaca-setup]].
@@ -35,8 +37,8 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started
 - **Collaboration:** Notion as the front door for Jonathan & Henry (theses, tasks, verdict view); repo canonical for code.
 
 ## Who's doing what next
-- **Tenzing:** ✅ universe fetched · ✅ Notion wired · ✅ verdict auto-logger built (2026-07-02) · ✅ Kronos alignment fixed · ✅ web app frontend deployed to Vercel (2026-07-02). Left: host the backend (`render.yaml` ready) + set `NEXT_PUBLIC_API_URL` in Vercel; restyle to the mockup. Kronos parked (see decision log).
-- **Jonathan:** first strategy thesis in `/research/` (the bottleneck — unblocks stages 3–4).
+- **Tenzing:** ✅ universe · ✅ Notion · ✅ auto-logger · ✅ full-stack deploy (2026-07-03) · ✅ mockup restyle · ✅ tsmom + `xsect.py` panel engine built and run (2026-07-03). Left: get Jonathan + Henry to act (below); add Alpaca paper keys; tell Notion the news.
+- **Jonathan:** SIGN Thesis 001 (it's pre-filled AND now has a run + surviving verdict attached — he reviews the economic story and owns or amends it).
 - **Henry:** real cost table (bps per instrument) + tradable universe + interpret/benchmark verdicts. (Mechanical logging is being automated — see [[plan/01-decision-log]].)
 
 ## Open questions still on the table
