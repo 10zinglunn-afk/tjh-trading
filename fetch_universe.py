@@ -13,15 +13,22 @@ import os
 import sys
 import yfinance as yf
 
-# Broad, liquid, clean. Benchmarks first so spy.csv exists for scan.py's SPY comparison.
+# Broad, liquid, clean (~S&P-100 scale). Benchmarks first so spy.csv exists for scan.py's
+# SPY comparison. ETFs are excluded from the cross-sectional stock panel (see xsect.EXCLUDE).
 UNIVERSE = [
     "SPY", "QQQ", "IWM", "DIA", "VTI",                                  # index ETFs
-    "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "AVGO",    # megacap tech
-    "AMD", "NFLX", "ADBE", "CRM", "ORCL", "INTC", "CSCO", "QCOM", "TXN",
-    "JPM", "BAC", "WFC", "GS", "V", "MA",                               # financials
-    "UNH", "JNJ", "LLY", "PFE", "MRK", "ABBV",                          # health
-    "WMT", "COST", "HD", "PG", "KO", "PEP", "MCD", "DIS", "NKE",        # consumer
-    "XOM", "CVX", "CAT", "BA",                                          # energy/industrial
+    "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "AVGO",    # megacap tech + semis
+    "AMD", "NFLX", "ADBE", "CRM", "ORCL", "INTC", "CSCO", "QCOM", "TXN", "IBM",
+    "NOW", "INTU", "AMAT", "MU", "LRCX", "ADI", "PANW", "SNPS", "CDNS", "KLAC",
+    "TMUS", "ACN",
+    "JPM", "BAC", "WFC", "GS", "MS", "C", "SCHW", "AXP", "BLK", "SPGI", "V", "MA",  # financials
+    "UNH", "JNJ", "LLY", "PFE", "MRK", "ABBV", "BMY", "AMGN", "GILD", "CVS",        # health
+    "MDT", "ISRG", "VRTX", "TMO", "ABT", "DHR",
+    "WMT", "COST", "HD", "LOW", "PG", "KO", "PEP", "MCD", "SBUX", "DIS", "NKE",     # consumer
+    "TGT", "TJX", "BKNG", "MDLZ", "MO", "CL",
+    "XOM", "CVX", "COP", "SLB", "CAT", "BA", "HON", "UPS", "RTX", "LMT", "DE",      # industrial/energy
+    "UNP", "GE", "LIN",
+    "CMCSA", "T", "VZ",                                                 # communication
 ]
 
 

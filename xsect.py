@@ -40,6 +40,9 @@ ETF_COST = CostModel(spread_bps=3, slippage_bps=1)
 EXCLUDE = {'spy', 'qqq', 'dia', 'iwm', 'vti', 'tqqq'}
 TOP_N = 10
 LOOKBACK, SKIP = 252, 21       # canonical 12-1 in daily bars
+# Robustness-sweep neighborhood (SENSITIVITY only -- NOT a grid search; see sweep()).
+SWEEP_LOOKBACKS = {'6mo': 126, '9mo': 189, '12mo': 252}
+SWEEP_TOP_NS = [5, 10, 15]
 
 
 def load_panel(paths):
@@ -64,11 +67,12 @@ def month_end_mask(index):
     return index.isin(last)
 
 
-def target_weights(panel, top_n=TOP_N, picker=None):
+def target_weights(panel, top_n=TOP_N, lookback=LOOKBACK, picker=None):
     """Daily target-weight DataFrame: at each month-end, long the top_n names by 12-1
     momentum (equal weight), hold until the next rebalance. `picker` overrides the
-    selection (used by the random baseline); it gets (scores_row) -> list of names."""
-    scores = momentum_12_1(panel)
+    selection (used by the random baseline); it gets (scores_row) -> list of names.
+    `lookback` is exposed only for the robustness sweep -- the canonical spec uses the default."""
+    scores = momentum_12_1(panel, lookback=lookback)
     rebal = month_end_mask(panel.index)
     w = pd.DataFrame(np.nan, index=panel.index, columns=panel.columns)
     for t in panel.index[rebal]:
@@ -105,6 +109,72 @@ def _first_active(df):
 
 def _pct(v):
     return f"{v * 100:8.1f}%" if v == v else '     nan'
+
+
+def _ew_weights(panel, lookback):
+    """Equal-weight ALL names that have a valid momentum score at each month-end -- the
+    'just own the universe' baseline for a given lookback (eligibility tracks the lookback)."""
+    scores = momentum_12_1(panel, lookback=lookback)
+    rebal = month_end_mask(panel.index)
+    w = pd.DataFrame(np.nan, index=panel.index, columns=panel.columns)
+    for t in panel.index[rebal]:
+        row = scores.loc[t].dropna()
+        if len(row) < 1:
+            continue
+        wt = pd.Series(0.0, index=panel.columns)
+        wt[row.index] = 1.0 / len(row)
+        w.loc[t] = wt
+    return w.ffill().fillna(0.0)
+
+
+def robustness(res, spy_close):
+    """The scan's gauntlet applied to one panel result -> {psr, months, regimes, flags}.
+    Shared by the CLI and the track-record export so both tell the SAME story. Probabilistic
+    Sharpe is scored on MONTHLY returns (a monthly strategy: daily bars would count ~21
+    held-flat days as 21 independent wins and overstate significance)."""
+    monthly = res['net'].groupby([res.index.year, res.index.month]).apply(
+        lambda x: (1 + x).prod() - 1)
+    psr = deflated_sharpe_ratio(monthly.values, n_trials=1, ppy=12)   # n=1 => P(Sharpe > 0)
+    regimes = regime_split(res['net'], spy_close) if spy_close is not None else None
+    flags = []
+    if psr == psr and psr < 0.95:
+        flags.append(f"Probabilistic Sharpe {psr:.2f} < 0.95 -- not clearly distinguishable from zero.")
+    yearly = [(y, (1 + g['net']).prod() - 1) for y, g in res.groupby(res.index.year)]
+    ylogs = [(y, np.log(1 + r)) for y, r in yearly if r > -1]
+    ytot = sum(l for _, l in ylogs)
+    if ytot > 0 and ylogs:
+        by, bl = max(ylogs, key=lambda t: t[1])
+        if bl / ytot > 0.6:
+            flags.append(f"{bl/ytot*100:.0f}% of the (log) return came from {by} -- a one-year wonder.")
+    if regimes:
+        worst = min(('up', 'down', 'chop'), key=lambda r: regimes[r]['return'])
+        if regimes[worst]['return'] < -0.05:     # materially loses money in some regime
+            flags.append(f"Loses in the '{worst}' regime ({_pct(regimes[worst]['return']).strip()}) "
+                         f"-- momentum leans on 'up' markets and whipsaws in chop, not all-weather.")
+    return {'psr': psr, 'months': int(len(monthly)), 'regimes': regimes, 'flags': flags}
+
+
+def sweep(panel, cost_model=ETF_COST):
+    """SENSITIVITY, not selection. Run the canonical spec's NEIGHBORS (lookback x top_n) and
+    report the WHOLE neighborhood vs the EW-universe over each spec's own window. We do NOT
+    pick the winner -- the pre-registered 12mo/top-10 stays the verdict (see main()). The only
+    question this answers: is the edge broad (robust) or a single knife-edge config (a fluke)?"""
+    out = []
+    for lbl, lb in SWEEP_LOOKBACKS.items():
+        ew_res = _first_active(run_panel(panel, _ew_weights(panel, lb), cost_model))
+        for tn in SWEEP_TOP_NS:
+            res = _first_active(run_panel(panel, target_weights(panel, top_n=tn, lookback=lb),
+                                          cost_model))
+            m = compute_metrics(res)
+            ewm = compute_metrics(ew_res.reindex(res.index).dropna())
+            out.append({
+                'lookback': lbl, 'top_n': tn,
+                'total_return': m['total_return'], 'cagr': m['cagr'],
+                'sharpe': m['sharpe'], 'max_dd': m['max_drawdown'],
+                'beats_ew': bool(m['total_return'] > ewm['total_return']),
+                'canonical': bool(lb == LOOKBACK and tn == TOP_N),
+            })
+    return out
 
 
 def main():
@@ -185,45 +255,34 @@ def main():
         print(f"    {yr}: momentum {_pct(mo)}   EW {_pct(ewr)}   [{mark}]")
 
     # ROBUSTNESS GAUNTLET -- the same skeptic's checks the single-name scan applies, so the
-    # one surviving candidate is scrutinised BEFORE any human signs off on it.
-    # (1) Probabilistic Sharpe on MONTHLY returns. This is a monthly strategy; scoring its
-    #     Sharpe on daily bars would count ~21 held-flat days as 21 independent observations
-    #     and overstate significance. Monthly returns are the honest, ~independent unit.
-    monthly = res['net'].groupby([res.index.year, res.index.month]).apply(
-        lambda x: (1 + x).prod() - 1)
-    psr = deflated_sharpe_ratio(monthly.values, n_trials=1, ppy=12)   # n=1 => P(Sharpe > 0)
-    # (2) Regime split: is the "edge" just a bull-market ride?
-    regimes = regime_split(res['net'], spy_close_full) if spy_close_full is not None else None
-
+    # one surviving candidate is scrutinised BEFORE any human signs off on it (shared with the
+    # track-record export via robustness()).
+    rob = robustness(res, spy_close_full)
+    regimes, flags = rob['regimes'], rob['flags']
     print("\nROBUSTNESS (same gauntlet as the scan):")
-    print(f"  Probabilistic Sharpe (monthly, {len(monthly)} months): "
-          f"{psr:.2f}  (P the true Sharpe is > 0; >=0.95 = significant)")
+    print(f"  Probabilistic Sharpe (monthly, {rob['months']} months): "
+          f"{rob['psr']:.2f}  (P the true Sharpe is > 0; >=0.95 = significant)")
     if regimes:
         print("  Net return by SPY regime (a long-only signal is expected to lean 'up'):")
         for r in ('up', 'down', 'chop'):
             print(f"    {r:4s}: {_pct(regimes[r]['return'])}  ({regimes[r]['bars']} bars)")
-
-    flags = []
-    if psr == psr and psr < 0.95:
-        flags.append(f"Probabilistic Sharpe {psr:.2f} < 0.95 -- not clearly distinguishable from zero.")
-    yearly = [(y, (1 + g['net']).prod() - 1) for y, g in res.groupby(res.index.year)]
-    ylogs = [(y, np.log(1 + r)) for y, r in yearly if r > -1]
-    ytot = sum(l for _, l in ylogs)
-    if ytot > 0 and ylogs:
-        by, bl = max(ylogs, key=lambda t: t[1])
-        if bl / ytot > 0.6:
-            flags.append(f"{bl/ytot*100:.0f}% of the (log) return came from {by} -- a one-year wonder.")
-    if regimes:
-        worst = min(('up', 'down', 'chop'), key=lambda r: regimes[r]['return'])
-        if regimes[worst]['return'] < -0.05:     # materially loses money in some regime
-            flags.append(f"Loses in the '{worst}' regime ({_pct(regimes[worst]['return']).strip()}) "
-                         f"-- momentum leans on 'up' markets and whipsaws in chop, not all-weather.")
     if flags:
         print("  RED FLAGS:")
         for f in flags:
             print(f"    - {f}")
     else:
         print("  No robustness red flag fired (the survivorship caveat below still stands).")
+
+    # SENSITIVITY SWEEP -- neighbors of the canonical spec, to show it is not a knife-edge fluke.
+    sw = sweep(panel)
+    n_beat = sum(s['beats_ew'] for s in sw)
+    print("\nSENSITIVITY (neighbors of the canonical spec -- NOT selection; the pre-registered")
+    print(f"  12mo/top-10 stays the verdict). {n_beat}/{len(sw)} neighbor specs beat their EW-universe:")
+    print(f"    {'lookback':>8s} {'topN':>5s} {'total ret':>10s} {'Sharpe':>7s} {'beats EW':>9s}")
+    for s in sw:
+        star = '  <= canonical' if s['canonical'] else ''
+        print(f"    {s['lookback']:>8s} {s['top_n']:>5d} {_pct(s['total_return'])} "
+              f"{s['sharpe']:7.2f} {'YES' if s['beats_ew'] else 'no':>9s}{star}")
 
     print("\nThe bar that matters:")
     beats_ew = m['total_return'] > m_ew['total_return']

@@ -88,6 +88,58 @@ export function TrackRecord() {
           {pct(th.per_year.find((y) => y.year === 2022)?.ew_universe ?? null)}).
           Status: <b>{th.status}</b>. Caveats: {th.caveats.join("; ")}.
         </p>
+
+        <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
+          <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6, color: "var(--text-primary)" }}>
+            Robustness gauntlet — the same skeptic&apos;s checks the wide scan applies
+          </div>
+          <div style={{ display: "flex", gap: 18, flexWrap: "wrap", fontSize: 12, marginBottom: 10 }}>
+            <span className="muted">
+              Probabilistic Sharpe (monthly):{" "}
+              <b className={th.probabilistic_sharpe >= 0.95 ? "good" : "bad"}>{num(th.probabilistic_sharpe)}</b>
+            </span>
+            {th.regime_split && (
+              <span className="muted">
+                By SPY regime — up <b className="good">{pct(th.regime_split.up.return)}</b>,{" "}
+                down {pct(th.regime_split.down.return)},{" "}
+                chop <b className="bad">{pct(th.regime_split.chop.return)}</b>
+              </span>
+            )}
+          </div>
+
+          <p className="muted" style={{ margin: "0 0 6px", fontSize: 11.5, lineHeight: 1.5 }}>
+            Sensitivity —{" "}
+            <b style={{ color: "var(--text-primary)" }}>{th.sweep_beats_ew} neighbor specs beat their EW-universe</b>.
+            We do <em>not</em> select the best; the pre-registered 12mo/top-10 stays the verdict.
+            A broad neighborhood means the edge is not a single lucky config.
+          </p>
+          <table>
+            <thead>
+              <tr><th>Lookback</th><th>Top N</th><th>Total return</th><th>Sharpe</th><th>Beats EW</th></tr>
+            </thead>
+            <tbody>
+              {th.sweep.map((s, i) => (
+                <tr key={i} style={s.canonical ? { fontWeight: 600 } : undefined}>
+                  <td>{s.lookback}{s.canonical ? " ★" : ""}</td>
+                  <td>{s.top_n}</td>
+                  <td className={s.total_return >= 0 ? "good" : "bad"}>{pct(s.total_return)}</td>
+                  <td>{num(s.sharpe)}</td>
+                  <td className={s.beats_ew ? "good" : "bad"}>{s.beats_ew ? "YES" : "no"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {th.red_flags.length > 0 && (
+            <div style={{
+              marginTop: 10, padding: "8px 10px", borderRadius: 6, fontSize: 11.5,
+              background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.25)",
+            }}>
+              <b className="bad">Red flag{th.red_flags.length > 1 ? "s" : ""}:</b>{" "}
+              {th.red_flags.join(" ")}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

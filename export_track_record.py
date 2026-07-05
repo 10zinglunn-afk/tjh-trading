@@ -18,7 +18,8 @@ from datetime import date
 from data import load_csv
 from scan import scan_universe, CANDIDATES, _verdict
 from xsect import (load_panel, target_weights, run_panel, _first_active,
-                   month_end_mask, momentum_12_1, EXCLUDE, TOP_N, ETF_COST)
+                   month_end_mask, momentum_12_1, robustness, sweep,
+                   EXCLUDE, TOP_N, ETF_COST)
 from metrics import compute_metrics
 
 import numpy as np
@@ -73,11 +74,17 @@ def thesis_001_summary():
         ew.loc[t] = wt
     ew_res = _first_active(run_panel(panel, ew.ffill().fillna(0.0))).reindex(window).dropna()
 
+    spy_close_full = (load_csv('realdata/spy.csv', warn=False)['close']
+                      if os.path.exists('realdata/spy.csv') else None)
     spy_m = None
-    if os.path.exists('realdata/spy.csv'):
+    if spy_close_full is not None:
         from backtest import run_backtest
-        spy = load_csv('realdata/spy.csv', warn=False)['close'].reindex(window).dropna()
+        spy = spy_close_full.reindex(window).dropna()
         _, spy_m = run_backtest(spy, pd.Series(1.0, index=spy.index), ETF_COST)
+
+    rob = robustness(res, spy_close_full)          # PSR + regime split + red flags
+    sw = sweep(panel)                              # sensitivity neighborhood
+    n_beat = sum(s['beats_ew'] for s in sw)
 
     m, m_ew = compute_metrics(res), compute_metrics(ew_res)
     per_year = []
@@ -88,6 +95,10 @@ def thesis_001_summary():
             'momentum': float((1 + g['net']).prod() - 1),
             'ew_universe': float((1 + ge['net']).prod() - 1) if len(ge) else None,
         })
+    status = (f'SURVIVES the panel bar; robustness-checked (monthly PSR {rob["psr"]:.2f}, '
+              f'{n_beat}/{len(sw)} sensitivity neighbors beat EW)'
+              + (f'; {len(rob["flags"])} red flag tempers it' if rob['flags'] else '')
+              + ' — pending Jonathan sign-off + paper trading')
     return {
         'spec': f'12-1 cross-sectional momentum, monthly, top {TOP_N} of '
                 f'{panel.shape[1]} stocks, long-only, equal weight, n_trials=1',
@@ -100,11 +111,16 @@ def thesis_001_summary():
             'total_return': spy_m['total_return'], 'cagr': spy_m['cagr'],
             'sharpe': spy_m['sharpe'], 'max_dd': spy_m['max_drawdown']},
         'per_year': per_year,
-        'status': 'SURVIVES first panel test — pending Jonathan sign-off + '
-                  'per-regime checks + paper trading',
+        'probabilistic_sharpe': rob['psr'],
+        'regime_split': rob['regimes'],
+        'red_flags': rob['flags'],
+        'sweep': sw,
+        'sweep_beats_ew': f'{n_beat}/{len(sw)}',
+        'status': status,
         'caveats': ['universe is survivorship-biased (today\'s liquid names)',
                     'single history, no parameter search (nothing to overfit, '
-                    'but only one draw)'],
+                    'but only one draw)',
+                    'bull-market vehicle: loses in choppy/sideways regimes'],
     }
 
 
