@@ -33,6 +33,7 @@ import pandas as pd
 from costs import CostModel
 from data import load_csv
 from metrics import compute_metrics
+from diagnostics import deflated_sharpe_ratio, regime_split
 
 ETF_COST = CostModel(spread_bps=3, slippage_bps=1)
 # The benchmark and pure index/leveraged products are not cross-sectional candidates.
@@ -120,9 +121,11 @@ def main():
     window = res.index
 
     # Baseline 1: hold SPY over the identical live window (net of the same cost model).
+    spy_close_full = (load_csv('realdata/spy.csv', warn=False)['close']
+                      if os.path.exists('realdata/spy.csv') else None)
     spy_m = None
-    if os.path.exists('realdata/spy.csv'):
-        spy = load_csv('realdata/spy.csv', warn=False)['close'].reindex(window).dropna()
+    if spy_close_full is not None:
+        spy = spy_close_full.reindex(window).dropna()
         spy_pos = pd.Series(1.0, index=spy.index)
         from backtest import run_backtest
         _, spy_m = run_backtest(spy, spy_pos, ETF_COST)
@@ -181,6 +184,47 @@ def main():
         mark = '+' if mo > ewr else '-'
         print(f"    {yr}: momentum {_pct(mo)}   EW {_pct(ewr)}   [{mark}]")
 
+    # ROBUSTNESS GAUNTLET -- the same skeptic's checks the single-name scan applies, so the
+    # one surviving candidate is scrutinised BEFORE any human signs off on it.
+    # (1) Probabilistic Sharpe on MONTHLY returns. This is a monthly strategy; scoring its
+    #     Sharpe on daily bars would count ~21 held-flat days as 21 independent observations
+    #     and overstate significance. Monthly returns are the honest, ~independent unit.
+    monthly = res['net'].groupby([res.index.year, res.index.month]).apply(
+        lambda x: (1 + x).prod() - 1)
+    psr = deflated_sharpe_ratio(monthly.values, n_trials=1, ppy=12)   # n=1 => P(Sharpe > 0)
+    # (2) Regime split: is the "edge" just a bull-market ride?
+    regimes = regime_split(res['net'], spy_close_full) if spy_close_full is not None else None
+
+    print("\nROBUSTNESS (same gauntlet as the scan):")
+    print(f"  Probabilistic Sharpe (monthly, {len(monthly)} months): "
+          f"{psr:.2f}  (P the true Sharpe is > 0; >=0.95 = significant)")
+    if regimes:
+        print("  Net return by SPY regime (a long-only signal is expected to lean 'up'):")
+        for r in ('up', 'down', 'chop'):
+            print(f"    {r:4s}: {_pct(regimes[r]['return'])}  ({regimes[r]['bars']} bars)")
+
+    flags = []
+    if psr == psr and psr < 0.95:
+        flags.append(f"Probabilistic Sharpe {psr:.2f} < 0.95 -- not clearly distinguishable from zero.")
+    yearly = [(y, (1 + g['net']).prod() - 1) for y, g in res.groupby(res.index.year)]
+    ylogs = [(y, np.log(1 + r)) for y, r in yearly if r > -1]
+    ytot = sum(l for _, l in ylogs)
+    if ytot > 0 and ylogs:
+        by, bl = max(ylogs, key=lambda t: t[1])
+        if bl / ytot > 0.6:
+            flags.append(f"{bl/ytot*100:.0f}% of the (log) return came from {by} -- a one-year wonder.")
+    if regimes:
+        worst = min(('up', 'down', 'chop'), key=lambda r: regimes[r]['return'])
+        if regimes[worst]['return'] < -0.05:     # materially loses money in some regime
+            flags.append(f"Loses in the '{worst}' regime ({_pct(regimes[worst]['return']).strip()}) "
+                         f"-- momentum leans on 'up' markets and whipsaws in chop, not all-weather.")
+    if flags:
+        print("  RED FLAGS:")
+        for f in flags:
+            print(f"    - {f}")
+    else:
+        print("  No robustness red flag fired (the survivorship caveat below still stands).")
+
     print("\nThe bar that matters:")
     beats_ew = m['total_return'] > m_ew['total_return']
     beats_rand = m['total_return'] > m_rand['total_return']
@@ -195,11 +239,15 @@ def main():
     print("    survived to 2026 by construction. This inflates ALL long-only rows above,")
     print("    which is why 'beats EW universe' is the honest bar, not the raw return.")
     print("  * Single history, no folds: there is nothing to fit (n_trials=1), but this is")
-    print("    still ONE draw of history. A per-year split and regime check should follow")
-    print("    before any paper-trading decision.")
-    verdict = ('SURVIVES the panel bar (still needs per-year + regime checks + '
-               'Jonathan sign-off)' if beats_ew and beats_rand and beats_spy
-               else 'DOES NOT clear the bar -- selection added nothing beyond the universe')
+    print("    still ONE draw of history -- the per-year split, regime split, and probabilistic")
+    print("    Sharpe above ARE that scrutiny; a live paper-trade is the real out-of-sample test.")
+    if beats_ew and beats_rand and beats_spy:
+        rob = ('robustness-checked with no red flag' if not flags
+               else f'but {len(flags)} robustness flag(s) above temper it')
+        verdict = (f'SURVIVES the panel bar; {rob}. '
+                   f'Awaiting Jonathan sign-off (economic story) + Henry judgment.')
+    else:
+        verdict = 'DOES NOT clear the bar -- selection added nothing beyond the universe'
     print(f"\nVERDICT: {verdict}\n")
 
 

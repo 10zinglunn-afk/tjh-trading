@@ -3,7 +3,7 @@
 Home: [[PROJECT_PLAN]] · Charter: [[plan/07-charter-what-we-do]] · Decisions: [[plan/01-decision-log]]
 
 *The single "where are we right now" page. Update this whenever a stage moves. If you (or
-Claude) are catching up cold, read this first, then the charter. Last updated: 2026-07-02.*
+Claude) are catching up cold, read this first, then the charter. Last updated: 2026-07-05.*
 
 ## The mission, in one line
 Find ONE signal that beats buy-and-hold OOS net of realistic costs on real equity data, prove
@@ -17,7 +17,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started
 | **1. Harness** | costs/backtest/walkforward/metrics; no-lookahead verified | ✅ |
 | **2. Real data in** | adjusted daily bars via `fetch_data.py` (yfinance) or `fetch_alpaca.py` | 🟡 (53-ticker provisional universe fetched via `fetch_universe.py`; Henry to ratify) |
 | **3. First reasoned strategy** | Jonathan writes a thesis with a *why*; Tenzing implements it | 🟡 (Thesis 001 IMPLEMENTED + RUN 2026-07-03 — `xsect.py` panel engine + `time_series_momentum`; **awaiting Jonathan's signature** to close the loop) |
-| **4. Run + verdict** | run harness on a liquid ticker, record OOS-net-of-costs vs SPY | 🟡 (Thesis 001 **SURVIVES first panel test** — +756% vs +298% EW-universe, won 5/8 years, see [[plan/02-verdict-log]]; wide scan v2 w/ tsmom: 0/159 clean single-name edges. Henry's judgment + Jonathan sign-off before ADVANCE) |
+| **4. Run + verdict** | run harness on a liquid ticker, record OOS-net-of-costs vs SPY | 🟡 (Thesis 001 **SURVIVES first panel test** — +756% vs +298% EW-universe, won 5/8 years, see [[plan/02-verdict-log]]; **robustness-checked 2026-07-05**: monthly PSR 1.00 but regime split flags −35% in chop → bull-market vehicle; wide scan v2 w/ tsmom: 0/159 clean single-name edges. Henry's judgment + Jonathan sign-off before ADVANCE) |
 | **5. Web app v1** | Next.js + FastAPI visualizer; restyle to `webapp/MOCKUP.html` | ✅ (LIVE full-stack: https://webapp-zeta-liart.vercel.app + Render backend. 2026-07-03: restyled to mockup, defaults to real SPY, shows the real track record + Thesis 001) |
 | **6. Kronos for real** | run `forecast_kronos.py` non-mock on real tickers, read OOS row | ⏸️ **PARKED** — Kronos is strongest *intraday*; we trade *daily swing*. Only revisit if we ever choose to go intraday (phase-2 scope change, not made). See [[plan/01-decision-log]]. |
 | **7. Paper trade survivors** | only a strategy that passes stage 4 → `alpaca_paper.py` for weeks | ⬜ |
