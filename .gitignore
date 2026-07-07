@@ -9,13 +9,11 @@ venv/
 # Data — keep the code, not the (re)generatable datasets
 # Comment a line out if you DO want to share that data with the team
 realdata/
+realdata_archive_97/
 *.kronos.csv
 spy.csv
 qqq.csv
 iwm.csv
-
-# Generated outputs — regenerate with `python3 dashboard.py`
-dashboard.html
 
 # Web-app exports — regenerate with `python3 export_results.py [csv]`.
 # Real-ticker exports embed Yahoo price series (redistribution-restricted), so

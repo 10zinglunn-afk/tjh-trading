@@ -23,6 +23,8 @@ real deliverable is a machine that tells the truth about whether an edge exists.
 | `fetch_data.py` | Run LOCALLY to pull real SPY/QQQ via yfinance (sandbox has no internet). |
 | `forecast_kronos.py` | Run LOCALLY (needs torch + HF download). Causal walk-forward Kronos forecaster → caches next-bar return to `<ticker>.kronos.csv`. `--mock` tests plumbing with no model. Frequency-agnostic (daily/intraday). |
 | `run.py` | Entry point. Cost-regime table + walk-forward row. Auto-adds a `kronos` row + Kronos OOS walk-forward if a `.kronos.csv` sidecar exists. |
+| `scan.py` / `xsect.py` | Wide scan (ticker × strategy × grid, walk-forward OOS vs SPY/random/B&H with deflated-Sharpe + red flags) and the Thesis 001 cross-sectional momentum panel engine. Both also run **live in the browser** via the Engine Room (`/engine`, 2026-07-06). |
+| `api_server.py` / `engine_api.py` | FastAPI service: `/api/run` plus the Engine Room routes — `/api/universe` (per-ticker data provenance: Alpaca first, yfinance fallback, TTL-cached), `/api/engine/scan`, `/api/engine/momentum`, `/api/alpaca/status` (paper account, graceful when keys absent). `engine_api.py` calls the engines unmodified — no new backtest math, no math in JS. |
 
 ## Run it
 ```bash

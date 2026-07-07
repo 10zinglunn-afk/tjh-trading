@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import {
   fetchTickers, fetchRun, pct, num,
   type Results, type TickerInfo,
@@ -98,6 +99,11 @@ export default function Home() {
           </span>
           <span className="sm-pill tertiary">
             {loading ? "running…" : res ? `${res.meta.bars} bars · ${res.meta.start} → ${res.meta.end}` : ""}
+          </span>
+          <span className="sm-pill">
+            <Link href="/engine" style={{ textDecoration: "none", fontWeight: 600 }}>
+              Engine Room →
+            </Link>
           </span>
         </div>
       </div>

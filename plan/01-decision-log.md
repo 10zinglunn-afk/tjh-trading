@@ -8,6 +8,73 @@ When a decision changes, add a NEW entry that supersedes the old one (don't dele
 
 ---
 
+### 2026-07-06 — Universe slimmed 97 → 30: quality over quantity, and the engine re-run live to prove it
+**Decision:** Cut the working universe (`realdata/`, `fetch_universe.py`) from ~97 liquid names
+down to a deliberately small, boring, diversified core of **30 megacaps across 6 sectors**
+(tech, financials, healthcare, consumer, energy/industrial), plus SPY as the lone benchmark.
+Cut: all penny/pre-IPO/speculative names (nio, sofi, plug, snap), the leveraged ETF (tqqq),
+and redundant index ETFs (qqq, dia, iwm, vti). The archived ~97-name data (72 CSVs) is kept,
+untouched, in `realdata_archive_97/` (gitignored, not deleted) so we can restore or re-widen
+later without re-fetching from Yahoo.
+**Why:** 100 names is more than a 3-person club needs to prototype and reason about, and a
+bigger haystack just buries the signal in more noise (more multiple-testing burden for the
+same conclusion). A small, high-quality, explainable universe is easier to defend to Jonathan/
+Henry and is exactly the kind of list Henry's charter role (ratify the tradable universe) is
+supposed to bless — this is Tenzing's proposal for that list, not yet Henry's ratification.
+**Result of re-running the engine live on the new 30-name universe (2026-07-06):**
+- `xsect.py` (Thesis 001, cross-sectional 12-1 momentum): momentum top-10 **+309.4%** vs EW
+  universe **+284.5%** vs random top-10 **+276.5%** vs hold SPY **+179.7%**, 2019-08→2026-07.
+  Still beats all three bars; monthly probabilistic Sharpe still **1.00**; sensitivity sweep
+  **7/9** neighbors beat EW (vs 9/9 on the ~97 universe — a bit less broad, still solid); chop
+  red flag improved to −22.4% (was −39.1% on the larger universe). The absolute numbers moved
+  a lot (+972% → +309%) because it's a materially different, smaller universe — **this is a
+  robustness cross-check on an independently different universe, not a restatement of the
+  original ~97-name result**, and both are logged (see [[plan/02-verdict-log]]).
+- `scan.py` (wide single-name scan): 31 tickers × 3 strategies = 93 backtests → **0 EDGE?, 10
+  suspect, 83 dead**. Same honest base rate as the ~100-name run (0/309), just cheaper to run
+  and easier to read (93 rows, not 309).
+**Who:** Tenzing (directed Claude), 2026-07-06. Still needs Henry's formal ratification of the
+30-name list per his role (real cost table + tradable universe).
+
+### 2026-07-06 — Notion restructured into a beginner-friendly front door (`notion-import/`)
+**Decision:** The Notion workspace had grown disorganized, and neither Jonathan nor Henry (nor
+Tenzing) has real Notion experience. Rather than reorganize an existing Notion workspace by
+hand (no Notion API/MCP access available from this environment), built a complete replacement
+structure as `notion-import/` in the repo: 8 top-level pages (Start Here, What To Do Right Now,
+Roles, Strategy Ideas, Results So Far, Roadmap, Glossary, Decisions We've Made) written in
+plain English, ready to import via Notion's Markdown & CSV importer (`HOW_TO_IMPORT.md` has
+the exact steps). Content is a beginner-friendly distillation of `plan/`, `roles/`, and
+`research/` — those stay canonical and more detailed; Notion is the summary/to-do front door.
+**Why:** A disorganized workspace nobody can navigate doesn't get used, and Jonathan/Henry's
+outstanding sign-offs (the actual bottleneck — see [[plan/09-status-where-we-are]]) are more
+likely to happen if the ask is legible in 2 minutes, not buried in stale pages.
+**Who:** Tenzing (directed Claude), 2026-07-06.
+
+### 2026-07-06 — Repo/plan hygiene pass: dead code removed, stale docs refreshed, Thesis 001 doc written
+**Decision:** A full review of unfinished workflows and plan-layer staleness surfaced (1) real
+process gaps and (2) repo clutter. Fixed the clutter same-session per the maintenance rule:
+- Deleted `dashboard.py` + `dashboard_template.py` — an abandoned first-commit prototype
+  (single-file HTML dashboard) never listed in CLAUDE.md's canonical files table and fully
+  superseded by `export_results.py`/`api_server.py`/the Next.js app.
+- Deleted the `feat/webapp-v1` branch (local + remote) — fully fast-forward-merged to `main`
+  on 2026-07-02 (verified zero unique commits), left over in violation of the "no long-lived
+  feature branches" rule.
+- Refreshed `plan/03-roadmap.md`, which was stale (last touched 2026-07-02, described
+  already-shipped work as "Next"). Now points at the real bottleneck: human sign-offs
+  (Jonathan, Henry) and two small engineering loose ends (empty Alpaca `.env` keys;
+  `scan.py`/`xsect.py` results not wired into `verdict_log.py`'s auto-logger, so
+  `verdicts.jsonl` is missing the wide-scan-v3 and Thesis-001 runs — only 2 stale
+  `run.py`-only rows exist).
+- Updated `Run.md`'s embedded code block, which had drifted from `run.py` since 2026-07-02
+  (missing the Kronos row + verdict auto-logger it gained that session).
+- Wrote `research/theses/001-cross-sectional-momentum.md` — Thesis 001 had been implemented,
+  run, and referenced everywhere in the plan layer, but no actual thesis file existed for
+  Jonathan to sign (the file this project's own process requires). Backfilled from the real
+  `xsect.py`/`diagnostics.py` output so his signature means something concrete.
+**Why:** "Stale plan = dead plan," and dead branches/files erode trust in what's canonical.
+None of this changes engine logic or any verdict — pure hygiene plus closing a process gap.
+**Who:** Tenzing (directed Claude, full-project review, 2026-07-06).
+
 ### 2026-07-03 — Thesis 001 engine mismatch resolved: built the panel engine and ran it
 **Decision:** Thesis 001 (cross-sectional 12-1 momentum) as drafted could NOT run on the
 single-ticker engine — a gap discovered 2026-07-03. Resolved by building it, in two steps:

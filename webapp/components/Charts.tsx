@@ -1,10 +1,10 @@
 "use client";
 
 import {
-  ComposedChart, LineChart, Line, Area, AreaChart, Scatter,
+  ComposedChart, LineChart, Line, Area, AreaChart, Scatter, Bar, BarChart,
   XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, CartesianGrid,
 } from "recharts";
-import type { StrategyResult } from "@/lib/api";
+import type { StrategyResult, PerYearEntry } from "@/lib/api";
 
 const COL = {
   price: "#1a1a1a",
@@ -137,6 +137,32 @@ export function EquityChart({
         <Line type="monotone" dataKey="net" stroke={COL.net} dot={false} strokeWidth={2}
           name="Strategy (net of costs)" isAnimationActive={false} />
       </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+/** Per-year net return, momentum vs the EW-universe baseline, as grouped bars.
+ *  The classic "one-year wonder" check made visible: selection skill should show
+ *  up across years, not in a single lucky one. */
+export function PerYearBarChart({ data }: { data: PerYearEntry[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={220}>
+      <BarChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 4 }}>
+        <CartesianGrid stroke={COL.grid} vertical={false} />
+        <XAxis dataKey="year" tick={{ fill: COL.axis, fontSize: 11 }} stroke={COL.grid} />
+        <YAxis tick={{ fill: COL.axis, fontSize: 11 }} stroke={COL.grid} width={48}
+          tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} />
+        <Tooltip
+          contentStyle={TOOLTIP}
+          formatter={(v: number) => (v == null ? "—" : `${(v * 100).toFixed(1)}%`)}
+          labelStyle={{ color: "#666" }}
+          cursor={{ fill: "rgba(0,0,0,0.04)" }} />
+        <ReferenceLine y={0} stroke={COL.axis} />
+        <Bar dataKey="momentum" fill={COL.net} name="Momentum top-10"
+          isAnimationActive={false} radius={[2, 2, 0, 0]} />
+        <Bar dataKey="ew_universe" fill={COL.bh} name="EW universe"
+          isAnimationActive={false} radius={[2, 2, 0, 0]} />
+      </BarChart>
     </ResponsiveContainer>
   );
 }

@@ -4,32 +4,53 @@ Run LOCALLY (needs internet + `pip install yfinance`):
     python3 fetch_universe.py                 # the whole curated universe
     python3 fetch_universe.py AAPL MSFT       # just these (added to the universe)
 
-Split/dividend-ADJUSTED closes (auto_adjust=True). The universe is Henry's call --
-liquid US ETFs + large caps, "liquidity in, junk out" (plan/11 s1, charter). Yahoo data
-is redistribution-restricted, so realdata/ is gitignored: we keep the fetch CODE, not the
-data. Re-run any time to refresh; scan.py then picks up every realdata/*.csv automatically.
+Split/dividend-ADJUSTED closes (auto_adjust=True). Yahoo data is redistribution-restricted,
+so realdata/ is gitignored: we keep the fetch CODE, not the data. Re-run any time to
+refresh; scan.py/xsect.py then pick up every realdata/*.csv automatically.
+
+## Universe size: 30, not ~100 (slimmed 2026-07-06)
+We ran a ~97-name broad scan (see plan/02-verdict-log) and it did its job -- 0 EDGE?,
+proving liquid daily-bar timing mostly doesn't work. But 100 names is more than a 3-person
+club needs to prototype on, and it hid the signal in noise. This is a deliberately SMALL,
+BORING, diversified core of 30 megacaps across 6 sectors -- no penny/pre-IPO junk (nio,
+sofi, plug, snap all cut), no leverage (tqqq cut), one clean benchmark (SPY; qqq/dia/iwm/vti
+cut). Quality over quantity: easier to reason about, faster to iterate, same engine.
+Broaden again later only if Henry ratifies a bigger list for a specific reason.
 """
 import os
 import sys
 import yfinance as yf
 
-# Broad, liquid, clean (~S&P-100 scale). Benchmarks first so spy.csv exists for scan.py's
-# SPY comparison. ETFs are excluded from the cross-sectional stock panel (see xsect.EXCLUDE).
 UNIVERSE = [
-    "SPY", "QQQ", "IWM", "DIA", "VTI",                                  # index ETFs
-    "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "AVGO",    # megacap tech + semis
-    "AMD", "NFLX", "ADBE", "CRM", "ORCL", "INTC", "CSCO", "QCOM", "TXN", "IBM",
-    "NOW", "INTU", "AMAT", "MU", "LRCX", "ADI", "PANW", "SNPS", "CDNS", "KLAC",
-    "TMUS", "ACN",
-    "JPM", "BAC", "WFC", "GS", "MS", "C", "SCHW", "AXP", "BLK", "SPGI", "V", "MA",  # financials
-    "UNH", "JNJ", "LLY", "PFE", "MRK", "ABBV", "BMY", "AMGN", "GILD", "CVS",        # health
-    "MDT", "ISRG", "VRTX", "TMO", "ABT", "DHR",
-    "WMT", "COST", "HD", "LOW", "PG", "KO", "PEP", "MCD", "SBUX", "DIS", "NKE",     # consumer
-    "TGT", "TJX", "BKNG", "MDLZ", "MO", "CL",
-    "XOM", "CVX", "COP", "SLB", "CAT", "BA", "HON", "UPS", "RTX", "LMT", "DE",      # industrial/energy
-    "UNP", "GE", "LIN",
-    "CMCSA", "T", "VZ",                                                 # communication
+    # Tech / semis (10)
+    "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "AVGO", "ADBE", "CRM", "ORCL",
+    # Financials (5)
+    "JPM", "BAC", "GS", "MA", "V",
+    # Healthcare (5)
+    "UNH", "JNJ", "LLY", "ABBV", "MRK",
+    # Consumer (7)
+    "WMT", "COST", "HD", "PG", "KO", "MCD", "NKE",
+    # Energy / industrial (3)
+    "XOM", "CVX", "CAT",
 ]
+# Benchmark, fetched separately so spy.csv always exists for scan.py/xsect.py's SPY
+# comparison, without counting toward the 30-name stock panel.
+BENCHMARK = ["SPY"]
+
+# Ticker -> sector, the shared source of truth for any grouping (engine_api.py /
+# the web app's data panel). Keep in sync with the UNIVERSE comment blocks above.
+SECTORS = {
+    "AAPL": "Tech", "MSFT": "Tech", "NVDA": "Tech", "GOOGL": "Tech", "AMZN": "Tech",
+    "META": "Tech", "AVGO": "Tech", "ADBE": "Tech", "CRM": "Tech", "ORCL": "Tech",
+    "JPM": "Financials", "BAC": "Financials", "GS": "Financials",
+    "MA": "Financials", "V": "Financials",
+    "UNH": "Healthcare", "JNJ": "Healthcare", "LLY": "Healthcare",
+    "ABBV": "Healthcare", "MRK": "Healthcare",
+    "WMT": "Consumer", "COST": "Consumer", "HD": "Consumer", "PG": "Consumer",
+    "KO": "Consumer", "MCD": "Consumer", "NKE": "Consumer",
+    "XOM": "Energy/Industrial", "CVX": "Energy/Industrial", "CAT": "Energy/Industrial",
+    "SPY": "Benchmark",
+}
 
 
 def save(sym, frame):
@@ -41,7 +62,8 @@ def save(sym, frame):
 
 
 def main():
-    syms = UNIVERSE + [s.upper() for s in sys.argv[1:] if s.upper() not in UNIVERSE]
+    base = BENCHMARK + UNIVERSE
+    syms = base + [s.upper() for s in sys.argv[1:] if s.upper() not in base]
     os.makedirs("realdata", exist_ok=True)
     # One batched, threaded request is gentler on Yahoo's rate limit than N sequential ones.
     data = yf.download(syms, period="8y", interval="1d", auto_adjust=True,

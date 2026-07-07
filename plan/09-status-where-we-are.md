@@ -3,7 +3,7 @@
 Home: [[PROJECT_PLAN]] · Charter: [[plan/07-charter-what-we-do]] · Decisions: [[plan/01-decision-log]]
 
 *The single "where are we right now" page. Update this whenever a stage moves. If you (or
-Claude) are catching up cold, read this first, then the charter. Last updated: 2026-07-05.*
+Claude) are catching up cold, read this first, then the charter. Last updated: 2026-07-06.*
 
 ## The mission, in one line
 Find ONE signal that beats buy-and-hold OOS net of realistic costs on real equity data, prove
@@ -15,10 +15,10 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started
 | Stage | What it means | Status |
 |------|----------------|:--:|
 | **1. Harness** | costs/backtest/walkforward/metrics; no-lookahead verified | ✅ |
-| **2. Real data in** | adjusted daily bars via `fetch_data.py` (yfinance) or `fetch_alpaca.py` | 🟡 (~100-ticker liquid universe fetched via `fetch_universe.py` (broadened from 53 on 2026-07-05); Henry to ratify) |
-| **3. First reasoned strategy** | Jonathan writes a thesis with a *why*; Tenzing implements it | 🟡 (Thesis 001 IMPLEMENTED + RUN 2026-07-03 — `xsect.py` panel engine + `time_series_momentum`; **awaiting Jonathan's signature** to close the loop) |
-| **4. Run + verdict** | run harness on a liquid ticker, record OOS-net-of-costs vs SPY | 🟡 (Thesis 001 **SURVIVES the panel bar** — +972% vs +265% EW-universe on ~90 names, won 5/8 years, see [[plan/02-verdict-log]]; **robustness-checked 2026-07-05**: monthly PSR 1.00, **9/9 sensitivity-sweep neighbors beat EW** (edge is broad), but regime split flags −39% in chop → bull-market vehicle; wide scan v3: 0/309 clean single-name edges. Henry's judgment + Jonathan sign-off before ADVANCE) |
-| **5. Web app v1** | Next.js + FastAPI visualizer; restyle to `webapp/MOCKUP.html` | ✅ (LIVE full-stack: https://webapp-zeta-liart.vercel.app + Render backend. 2026-07-03: restyled to mockup, defaults to real SPY, shows the real track record + Thesis 001) |
+| **2. Real data in** | adjusted daily bars via `fetch_data.py` (yfinance) or `fetch_alpaca.py` | 🟡 (universe SLIMMED ~97 → **30-name curated core** + SPY via `fetch_universe.py` on 2026-07-06 — quality over quantity, junk/leverage cut; old ~97 archived in `realdata_archive_97/`, not deleted; Henry to ratify) |
+| **3. First reasoned strategy** | Jonathan writes a thesis with a *why*; Tenzing implements it | 🟡 (Thesis 001 IMPLEMENTED + RUN 2026-07-03 — `xsect.py` panel engine + `time_series_momentum`; thesis doc now exists at [[research/theses/001-cross-sectional-momentum]] (written 2026-07-06); **awaiting Jonathan's signature** to close the loop) |
+| **4. Run + verdict** | run harness on a liquid ticker, record OOS-net-of-costs vs SPY | 🟡 (Thesis 001 **SURVIVES the panel bar** on TWO independent universes — +972% vs +265% EW on ~90 names (2026-07-05) AND +309% vs +285% EW on the new slimmed 30-name core (2026-07-06), both beat SPY+random; monthly PSR 1.00 both times; sensitivity 9/9 then 7/9 neighbors beat EW; chop red flag −39%→−22% on the smaller universe. Wide scan: 0/309 (100-name) then 0/93 (30-name) clean single-name edges — same honest null at 1/3 the compute. Henry's judgment + Jonathan sign-off before ADVANCE) |
+| **5. Web app v1** | Next.js + FastAPI visualizer; restyle to `webapp/MOCKUP.html` | ✅ (LIVE full-stack: https://webapp-zeta-liart.vercel.app + Render backend. 2026-07-03: restyled to mockup, defaults to real SPY, shows the real track record + Thesis 001. **2026-07-06: Engine Room added (`/engine`)** — `scan.py` + `xsect.py` wired into the live API via `engine_api.py` (self-populating data: Alpaca first, yfinance fallback, per-ticker provenance shown), every gate pass/fail expandable per row, plus a live Alpaca paper-account panel (correctly shows zero positions until stage 7 starts). Deploy note: Render needs `APCA_API_KEY_ID`/`APCA_API_SECRET_KEY` set in its dashboard before the deployed backend can use Alpaca — until then it degrades to yfinance-only) |
 | **6. Kronos for real** | run `forecast_kronos.py` non-mock on real tickers, read OOS row | ⏸️ **PARKED** — Kronos is strongest *intraday*; we trade *daily swing*. Only revisit if we ever choose to go intraday (phase-2 scope change, not made). See [[plan/01-decision-log]]. |
 | **7. Paper trade survivors** | only a strategy that passes stage 4 → `alpaca_paper.py` for weeks | ⬜ |
 | **8. Real money** | deferred decision; nothing until a survivor proves out on paper | ⬜ |
@@ -37,7 +37,7 @@ What's missing is people: Jonathan signs the thesis, Henry judges the verdict
 - **Collaboration:** Notion as the front door for Jonathan & Henry (theses, tasks, verdict view); repo canonical for code.
 
 ## Who's doing what next
-- **Tenzing:** ✅ universe · ✅ Notion · ✅ auto-logger · ✅ full-stack deploy (2026-07-03) · ✅ mockup restyle · ✅ tsmom + `xsect.py` panel engine built and run (2026-07-03). Left: get Jonathan + Henry to act (below); add Alpaca paper keys; tell Notion the news.
+- **Tenzing:** ✅ universe (slimmed 97→30, 2026-07-06) · ✅ Notion (restructured 2026-07-06) · ✅ auto-logger · ✅ full-stack deploy (2026-07-03) · ✅ mockup restyle · ✅ tsmom + `xsect.py` panel engine built and run (2026-07-03, re-run on slimmed universe 2026-07-06). Left: get Jonathan + Henry to act (below); add Alpaca paper keys; wire `scan.py`/`xsect.py` into the auto-logger.
 - **Jonathan:** SIGN Thesis 001 (it's pre-filled AND now has a run + surviving verdict attached — he reviews the economic story and owns or amends it).
 - **Henry:** real cost table (bps per instrument) + tradable universe + interpret/benchmark verdicts. (Mechanical logging is being automated — see [[plan/01-decision-log]].)
 

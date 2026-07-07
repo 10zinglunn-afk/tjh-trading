@@ -1,47 +1,49 @@
 # 03 — Roadmap (Now / Next / Later)
 
-Home: [[PROJECT_PLAN]]
+Home: [[PROJECT_PLAN]] · Status: [[plan/09-status-where-we-are]] (the up-to-date pipeline tracker)
 
 *No dates — we move as fast as we can. This is about order and dependency, not calendar.
-Move items up as they're done; add freely.*
+Move items up as they're done; add freely. Last refreshed 2026-07-06 against [[plan/09-status-where-we-are]]
+and [[plan/01-decision-log]] — the machine track (web app, wide scan, Thesis 001 engine) is
+DONE; what's actually "Now" is the human sign-offs, not more code.*
 
 ## ▶️ Now
-*Tenzing's app track is sequential — each step gates the next ([[plan/06-engineering-plan]]
-Phase 0→1→2). Kronos is an independent research track that does not block the app.*
+*The engineering track (web app v1, wide scan, cross-sectional panel engine) is built, run,
+and deployed. The bottleneck has moved from code to people — see [[plan/09-status-where-we-are]]
+"the one thing blocking everything."*
 
-- **Tenzing (app, in order):**
-  1. ✅ **Done (2026-06-29).** Pre-IPO junk trimmed structurally in `data.py` (nio −64, sofi
-     −622 rows); mock Kronos quarantined to `realdata/_quarantine/`; `sanity_check.py` added
-     (7/7 green); `requirements.txt` added. Phase 0 of [[plan/06-engineering-plan]].
-  2. ✅ **Done (2026-06-29).** `export_results.py` writes a `results.json` from the canonical
-     harness (prices, positions, trades, gross/net equity, per-regime metrics, OOS
-     walk-forward, data-quality warnings). Verified to match `run.py` exactly and to be
-     byte-stable. Phase 1 of [[plan/06-engineering-plan]].
-  3. 🟢 **Built locally (2026-06-29), deploy pending.** Web app v1 ([[webapp/SPEC]]):
-     Next.js front end + `api_server.py` (FastAPI) running the harness on demand — ticker +
-     strategy pickers, price/signal chart with trade markers, net-of-cost equity vs buy-and-hold,
-     live cost sliders, OOS verdict panel, cost-regime table. Type-checks + prod build pass;
-     verified against the live API. Architecture in [[plan/01-decision-log]]. **Left:** deploy
-     to Vercel + a Python host (`webapp/README.md` has the steps).
-- **Tenzing (parallel research):** run **Kronos for real** (local, not `--mock`) on the six
-  tickers → log result in [[plan/02-verdict-log]]. Research input, not a blocker for app v1.
-- **Jonathan:** write the first strategy thesis ([[research/_thesis-template]]) with the
-  economic reason, expected result, and sizing/risk rules.
-- **Henry:** build the real **cost table** and tradable-universe rules → feeds `costs.py`
-  and the web app verdict panel.
+- **Jonathan:** SIGN Thesis 001 (`research/theses/001-cross-sectional-momentum.md`) — it's
+  pre-filled with the run and a surviving verdict attached; own or amend the economic story,
+  then pre-register whether you'd advance it to paper. **Not yet done — first log entry
+  still outstanding** ([[roles/log-Jonathan]]).
+- **Henry:** (1) build the real cost table (bps per instrument, from actual Alpaca/market
+  numbers) and ratify the **slimmed 30-name universe** (`fetch_universe.py`, cut from ~97 on
+  2026-07-06 — quality over quantity; old list archived, not gone, in `realdata_archive_97/`)
+  — `costs.py`'s 3/1 and 300/50 bps regimes are still Tenzing's placeholders, not Henry's
+  numbers yet; (2) render a judgment (real vs. survivorship-inflated) on Thesis 001's verdict,
+  now checked on **two** universes (see [[plan/02-verdict-log]] 2026-07-06). **Not yet done —
+  first log entry still outstanding** ([[roles/log-Henry]]).
+- **Tenzing:** (1) generate real Alpaca paper API keys and fill `.env` (currently blank —
+  literally blocks stage 7 even after sign-off); (2) wire `scan.py`/`xsect.py` results into
+  `verdict_log.py`'s auto-logger (`verdicts.jsonl` currently only has 2 rows from `run.py`,
+  missing the wide-scan-v3 and Thesis-001 runs that are the actual research record);
+  (3) add the panel-⑤ robustness/red-flag view (`diagnostics.py` output) to the per-ticker
+  web app view (`webapp/app/page.tsx`) — currently only shown for Thesis 001 in the static
+  track record, not for an arbitrary ticker/strategy run.
 
 ## ⏭️ Next
-- Make the deployed app interview-strong: README, architecture notes, demo flow, and public-safe
-  sample results.
-- Implement Jonathan's first accepted thesis as a signal; run it; verdict-log it.
-- Henry: benchmark every result against SPY / buy-and-hold in the verdict log.
+- Once Jonathan + Henry sign off: paper-trade Thesis 001 via `alpaca_paper.py` for 2+ weeks;
+  keep a trade journal (thesis, entry, exit, expected vs actual cost).
+- Make the deployed app interview-strong: README, architecture notes, demo flow.
 - Add the **options modeling layer** to the app only as an approximate teaching overlay; see
   [[webapp/options-modeling]].
-- Tenzing: wire Supabase to **record live option chains daily** after v1 ships; this is the
-  honest path to future options backtests.
+- Fill the missing Obsidian notes ([[Strategies]], [[Metrics]], [[Data]], [[Walkforward]] —
+  still unresolved wikilinks).
 
 ## 🔮 Later
-- Intraday Kronos (data swap) if daily is dead.
-- Paper-trade any survivor 2+ weeks before any real money.
-- Finetune Kronos *only if* zero-shot shows OOS edge.
+- Intraday Kronos (data swap) — parked; revisit only if we deliberately go intraday.
+- Wire Supabase to **record live option chains daily** — the honest path to future options
+  backtests.
+- Finetune Kronos *only if* zero-shot shows OOS edge (still not run for real — parked per
+  [[plan/01-decision-log]] 2026-07-02, daily-bar timeframe mismatch).
 - Fordham research-club build-out ([[plan/00-vision]]).

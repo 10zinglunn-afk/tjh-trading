@@ -11,6 +11,10 @@ Endpoints:
     GET /api/health
     GET /api/tickers
     GET /api/run?ticker=synthetic&spread_bps=3&slippage_bps=1[&fee=0]
+    GET /api/universe?refresh=false        # data provenance (Engine Room)
+    GET /api/engine/scan?refresh=false     # live wide scan (scan.scan_universe)
+    GET /api/engine/momentum?refresh=false # live Thesis 001 (xsect pipeline)
+    GET /api/alpaca/status                 # paper account (graceful if keys absent)
 """
 import os
 import re
@@ -21,6 +25,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from costs import CostModel
 from export_results import build, STRATEGIES
+import engine_api
 
 # Web input is untrusted: only a ticker-shaped token or 'synthetic' is allowed,
 # so the path-based branch in resolve_data can never be reached from the web.
@@ -81,3 +86,34 @@ def run(ticker: str = Query('synthetic'),
     except RuntimeError as e:                  # unknown ticker / yfinance missing / empty data
         raise HTTPException(400, str(e))
     return result
+
+
+# ---- Engine Room: live universe data / wide scan / Thesis 001 / paper account ----------
+# All computed in canonical Python (engine_api.py wraps scan.py / xsect.py unmodified);
+# the browser only renders the JSON. First hit after a cold start or TTL expiry may be
+# slow (live vendor fetch + full scan) -- the UI says so instead of hiding it.
+
+@app.get('/api/universe')
+def universe(refresh: bool = Query(False)):
+    return engine_api.ensure_universe_data(force=refresh)
+
+
+@app.get('/api/engine/scan')
+def engine_scan(refresh: bool = Query(False)):
+    payload = engine_api.run_scan(force=refresh)
+    if 'error' in payload:                     # every vendor fetch failed -- honest 503
+        raise HTTPException(503, payload['error'])
+    return payload
+
+
+@app.get('/api/engine/momentum')
+def engine_momentum(refresh: bool = Query(False)):
+    payload = engine_api.run_momentum(force=refresh)
+    if 'error' in payload:
+        raise HTTPException(503, payload['error'])
+    return payload
+
+
+@app.get('/api/alpaca/status')
+def alpaca_status():
+    return engine_api.alpaca_status()

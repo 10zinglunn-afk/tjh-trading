@@ -80,8 +80,147 @@ async function getJSON<T>(path: string): Promise<T> {
   return res.json();
 }
 
+// ---- Engine Room types (live /engine page; all computed in Python) ----
+
+export type UniverseTicker = {
+  ticker: string;
+  sector: string;
+  source: "realdata" | "cache" | "alpaca" | "yfinance-fallback" | "none";
+  rows: number | null;
+  start: string | null;
+  end: string | null;
+  ok: boolean;
+  error: string | null;
+};
+
+export type UniverseResponse = {
+  tickers: UniverseTicker[];
+  summary: {
+    n_ok: number;
+    n_failed: number;
+    cache_age_seconds: number;
+    ttl_seconds: number;
+    source: string;
+    alpaca_configured: boolean;
+  };
+};
+
+export type ScanRow = {
+  ticker: string;
+  strategy: string;
+  verdict: string;
+  metrics: Metrics & { n_trials: number };
+  bh_return: number | null;
+  rand_return: number | null;
+  spy_return: number | null;
+  beats_bh: boolean;
+  beats_rand: boolean;
+  beats_spy: boolean;
+  survives_gate2: boolean;
+  significant: boolean;
+  clean: boolean;
+  dsr: number | null;
+  red_flags: string[];
+  trades_per_fold: number;
+  thin: boolean;
+};
+
+export type ScanResponse = {
+  summary: {
+    n_backtests: number;
+    n_tickers: number;
+    strategies: string[];
+    n_edge: number;
+    n_suspect: number;
+    n_dead: number;
+    elapsed_seconds: number;
+    n_folds: number;
+    min_trades_per_fold: number;
+    cost_regime: string;
+    has_spy_benchmark: boolean;
+  };
+  rows: ScanRow[];
+};
+
+export type PerYearEntry = { year: number; momentum: number; ew_universe: number | null };
+
+export type SweepEntry = {
+  lookback: string;
+  top_n: number;
+  total_return: number;
+  cagr: number;
+  sharpe: number;
+  max_dd: number;
+  beats_ew: boolean;
+  canonical: boolean;
+};
+
+export type RegimeSplit = Record<"up" | "down" | "chop", { return: number; bars: number }>;
+
+export type MomentumResponse = {
+  spec: string;
+  window: [string, string];
+  bars: number;
+  n_names: number;
+  portfolios: {
+    momentum: Metrics;
+    ew_universe: Metrics;
+    random: Metrics;
+    spy: Metrics | null;
+  };
+  per_year: PerYearEntry[];
+  probabilistic_sharpe: number | null;
+  psr_months: number;
+  regime_split: RegimeSplit | null;
+  red_flags: string[];
+  sweep: SweepEntry[];
+  sweep_beats_ew: string;
+  verdict: { beats_ew: boolean; beats_random: boolean; beats_spy: boolean; survives: boolean };
+  caveats: string[];
+  elapsed_seconds: number;
+};
+
+export type AlpacaPosition = {
+  symbol: string;
+  qty: number;
+  avg_entry_price: number;
+  market_value: number;
+  unrealized_pl: number;
+};
+
+export type AlpacaStatus = {
+  configured: boolean;
+  reason?: string;
+  ok?: boolean;
+  error?: string;
+  account?: {
+    account_number: string;
+    status: string;
+    equity: number;
+    cash: number;
+    buying_power: number;
+  };
+  positions?: AlpacaPosition[];
+};
+
 export function fetchTickers() {
   return getJSON<TickersResponse>("/api/tickers");
+}
+
+export function fetchUniverse(refresh = false) {
+  return getJSON<UniverseResponse>(`/api/universe?refresh=${refresh}`);
+}
+
+export function fetchScan(refresh = false) {
+  return getJSON<ScanResponse>(`/api/engine/scan?refresh=${refresh}`);
+}
+
+export function fetchMomentum(refresh = false) {
+  return getJSON<MomentumResponse>(`/api/engine/momentum?refresh=${refresh}`);
+}
+
+export function fetchAlpacaStatus() {
+  return getJSON<AlpacaStatus>("/api/alpaca/status");
 }
 
 export function fetchRun(opts: {
@@ -102,3 +241,7 @@ export const pct = (v: number | null | undefined, dp = 1) =>
   v === null || v === undefined || Number.isNaN(v) ? "—" : `${(v * 100).toFixed(dp)}%`;
 export const num = (v: number | null | undefined, dp = 2) =>
   v === null || v === undefined || Number.isNaN(v) ? "—" : v.toFixed(dp);
+export const usd = (v: number | null | undefined) =>
+  v === null || v === undefined || Number.isNaN(v)
+    ? "—"
+    : v.toLocaleString("en-US", { style: "currency", currency: "USD" });

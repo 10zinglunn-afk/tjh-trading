@@ -114,8 +114,16 @@ Target look = `webapp/MOCKUP.html`; panel spec = [[webapp/DESIGN_TARGET]]. Five 
    "only 11 trades/fold", "best of 12 configs — deflated Sharpe ~0.2") so a non-expert (Henry)
    SEES why a result might be fake. Flags guide; the advance/kill call stays human.
 
-*Future (Phase B/C, deferred): a wide-scan view (the IS-vs-OOS scatter, each dot a backtest) and
-Supabase recording live option chains daily for honest options backtests.*
+**Wide-scan view — BUILT (2026-07-06): the Engine Room (`/engine`).** `scan.py` and `xsect.py`
+now run **live** in the browser via `engine_api.py` + new `api_server.py` routes
+(`/api/universe`, `/api/engine/scan`, `/api/engine/momentum`, `/api/alpaca/status`): a data
+panel showing per-ticker provenance (Alpaca / yfinance-fallback / cache), the full ticker ×
+strategy table where every row expands into its gate-by-gate pass/fail checklist + red flags,
+the Thesis 001 panel (baselines, per-year bars, regime split, sensitivity sweep, PSR), and the
+live Alpaca paper account. Same hard rule — zero math in JS, the engines are called unmodified.
+
+*Still future (Phase B/C, deferred): the IS-vs-OOS scatter (each dot a backtest) and Supabase
+recording live option chains daily for honest options backtests.*
 
 ## 7. Hard invariants (do not break — for Claude CLI especially)
 - The Python engine is the single source of truth. The scan wrapper, the app, and the logger all
