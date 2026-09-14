@@ -8,6 +8,12 @@ and [[plan/01-decision-log]] — the machine track (web app, wide scan, Thesis 0
 DONE; what's actually "Now" is the human sign-offs, not more code.*
 
 ## ▶️ Now
+- **2026-09-13 — supersedes the sign-off items below:** Thesis 001's edge over EW-universe
+  failed a significance check (t = 0.34). Work now follows [[plan/12-real-markets-plan]]. First
+  parallel batch: P0.1 add the vs-EW gate (Opus), P0.2 audit the other gates (Fable), P1.1
+  fetch Ken French momentum data (Haiku), P1.3 design a no-hindsight universe (Fable).
+  Jonathan and Henry: review the **G1 criteria** in plan/12 *before* the results come in.
+
 *The engineering track (web app v1, wide scan, cross-sectional panel engine) is built, run,
 and deployed. The bottleneck has moved from code to people — see [[plan/09-status-where-we-are]]
 "the one thing blocking everything."*
@@ -23,13 +29,18 @@ and deployed. The bottleneck has moved from code to people — see [[plan/09-sta
   numbers yet; (2) render a judgment (real vs. survivorship-inflated) on Thesis 001's verdict,
   now checked on **two** universes (see [[plan/02-verdict-log]] 2026-07-06). **Not yet done —
   first log entry still outstanding** ([[roles/log-Henry]]).
-- **Tenzing:** (1) generate real Alpaca paper API keys and fill `.env` (currently blank —
-  literally blocks stage 7 even after sign-off); (2) wire `scan.py`/`xsect.py` results into
-  `verdict_log.py`'s auto-logger (`verdicts.jsonl` currently only has 2 rows from `run.py`,
-  missing the wide-scan-v3 and Thesis-001 runs that are the actual research record);
-  (3) add the panel-⑤ robustness/red-flag view (`diagnostics.py` output) to the per-ticker
-  web app view (`webapp/app/page.tsx`) — currently only shown for Thesis 001 in the static
-  track record, not for an arbitrary ticker/strategy run.
+- **Tenzing:** (1) ~~generate real Alpaca paper API keys and fill `.env`~~ **DONE** — `.env`
+  has live Alpaca paper keys, account verified ACTIVE (2026-07-10, $100k equity/$400k buying
+  power); (2) ~~wire `scan.py`/`xsect.py` results into `verdict_log.py`'s auto-logger~~
+  **DONE (2026-07-11)** — `scan.py --log` records edges + gate-2 suspects, `xsect.py --log`
+  records the Thesis-001 panel verdict; `verdict_log.render_markdown` dedups per
+  (ticker, strategy, run, cost_regime) so re-runs refresh instead of stacking. Refresh the
+  human log with `python3 verdict_log.py --write-md plan/02-verdict-log.md`; (3) ~~add the
+  panel-⑤ robustness/red-flag view (`diagnostics.py` output) to the per-ticker web app view~~
+  **DONE (2026-07-11)** — `export_results.build` now attaches `diagnostics` (deflated Sharpe,
+  per-year, regime split, red flags) to each walk-forward entry, and `webapp/app/page.tsx`
+  renders a `⑤ Robustness` card in the per-ticker view. Verified live (SPY/meanrev: DSR 0.60,
+  one red flag).
 
 ## ⏭️ Next
 - Once Jonathan + Henry sign off: paper-trade Thesis 001 via `alpaca_paper.py` for 2+ weeks;

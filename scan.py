@@ -36,6 +36,7 @@ from strategies import (buy_and_hold, random_strategy, sma_crossover, mean_rever
                         time_series_momentum)
 from walkforward import walk_forward
 from diagnostics import diagnose, config_sharpes
+from verdict_log import append_verdict, scan_row_to_record
 
 # The truth-for-equities regime. Frictionless is a lie; options are a separate study.
 ETF_COST = CostModel(spread_bps=3, slippage_bps=1)
@@ -160,7 +161,10 @@ def _line(r):
 
 
 def main():
-    paths = sys.argv[1:] or sorted(glob.glob('realdata/*.csv'))
+    args = sys.argv[1:]
+    log = '--log' in args                       # opt-in: record the meaningful rows as verdicts
+    args = [a for a in args if a != '--log']
+    paths = args or sorted(glob.glob('realdata/*.csv'))
     if not paths:
         print("No CSVs to scan. Pass paths or run fetch_universe.py into realdata/.")
         return
@@ -190,6 +194,15 @@ def main():
     suspects = [r for r in rows if r['survives_gate2'] and not r['clean']]
     print(f"RESULT: {len(edges)} EDGE?  |  {len(suspects)} suspect  |  "
           f"{len(rows) - len(edges) - len(suspects)} dead   (of {len(rows)})\n")
+
+    # Record the rows that warrant a human look (edges + gate-2 survivors) into the
+    # verdict log. The 80-odd dead backtests are the expected base rate, not a track record;
+    # logging them all would bury the meaningful rows and stack on every re-run.
+    if log:
+        for r in edges + suspects:
+            append_verdict(scan_row_to_record(r))
+        print(f"Logged {len(edges) + len(suspects)} verdict record(s) to verdicts.jsonl "
+              f"({len(edges)} EDGE? + {len(suspects)} suspect).\n")
 
     if edges:
         print("EDGE? candidates (beat SPY + random, positive, >=30 trades/fold, DSR>=0.95):")

@@ -34,6 +34,7 @@ from costs import CostModel
 from data import load_csv
 from metrics import compute_metrics
 from diagnostics import deflated_sharpe_ratio, regime_split
+from verdict_log import append_verdict
 
 ETF_COST = CostModel(spread_bps=3, slippage_bps=1)
 # The benchmark and pure index/leveraged products are not cross-sectional candidates.
@@ -178,7 +179,10 @@ def sweep(panel, cost_model=ETF_COST):
 
 
 def main():
-    paths = sys.argv[1:] or sorted(glob.glob('realdata/*.csv'))
+    args = sys.argv[1:]
+    log = '--log' in args                       # opt-in: record the Thesis-001 verdict
+    args = [a for a in args if a != '--log']
+    paths = args or sorted(glob.glob('realdata/*.csv'))
     stock_paths = [p for p in paths
                    if os.path.splitext(os.path.basename(p))[0] not in EXCLUDE]
     if not stock_paths:
@@ -301,13 +305,33 @@ def main():
     print("    still ONE draw of history -- the per-year split, regime split, and probabilistic")
     print("    Sharpe above ARE that scrutiny; a live paper-trade is the real out-of-sample test.")
     if beats_ew and beats_rand and beats_spy:
-        rob = ('robustness-checked with no red flag' if not flags
-               else f'but {len(flags)} robustness flag(s) above temper it')
-        verdict = (f'SURVIVES the panel bar; {rob}. '
+        rob_note = ('robustness-checked with no red flag' if not flags
+                    else f'but {len(flags)} robustness flag(s) above temper it')
+        verdict = (f'SURVIVES the panel bar; {rob_note}. '
                    f'Awaiting Jonathan sign-off (economic story) + Henry judgment.')
     else:
         verdict = 'DOES NOT clear the bar -- selection added nothing beyond the universe'
     print(f"\nVERDICT: {verdict}\n")
+
+    # Record one panel verdict into the shared log. The logger stays a pure recorder --
+    # every field here already came out of compute_metrics / robustness above. The honest
+    # bar for a survivorship-inflated panel is the EW-universe, so that (not buy&hold) is the
+    # 'vs B&H' column; PSR stands in for the deflated Sharpe a single-name run would carry.
+    if log:
+        clean = bool(beats_ew and beats_rand and beats_spy and not flags)
+        append_verdict({
+            "ticker": f"panel_{n_names}", "strategy": "xsect_momentum_12_1",
+            "cost_regime": "3/1 bps (liquid ETF)", "run": "panel",
+            "oos_total_return": m["total_return"], "oos_sharpe": m["sharpe"],
+            "oos_max_dd": m["max_drawdown"], "num_trades": m["num_trades"],
+            "buy_hold_return": m_ew["total_return"],       # EW-universe = the honest bar
+            "spy_return": spy_m["total_return"] if spy_m is not None else None,
+            "beats_bh": bool(beats_ew),
+            "deflated_sharpe": rob["psr"], "trades_per_fold": None,
+            "regime_split": regimes, "red_flags": flags, "clean": clean,
+            "synthetic": False,
+        })
+        print("Logged 1 Thesis-001 panel verdict to verdicts.jsonl.\n")
 
 
 if __name__ == '__main__':

@@ -24,6 +24,12 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started
 | **8. Real money** | deferred decision; nothing until a survivor proves out on paper | ⬜ |
 
 ## The one thing blocking everything
+**2026-09-13 update: proof, before sign-offs.** A significance check found Thesis 001's edge
+over EW-universe is not distinguishable from luck (t = 0.34 on the 30-name core; it loses
+ex-NVDA). Stage 4 is downgraded to *unproven*. The next work is [[plan/12-real-markets-plan]]
+Phase 0–1 (fix the gate, then long-history and no-hindsight tests). The paragraph below is the
+pre-2026-09-13 view, kept for history.
+
 **Human sign-offs, not the machine.** The first reasoned strategy (Thesis 001,
 cross-sectional momentum) is implemented AND run — it survives its first panel test.
 What's missing is people: Jonathan signs the thesis, Henry judges the verdict

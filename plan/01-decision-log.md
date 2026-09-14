@@ -8,6 +8,22 @@ When a decision changes, add a NEW entry that supersedes the old one (don't dele
 
 ---
 
+### 2026-09-13 — Thesis 001 downgraded to unproven; new real-markets plan with model-assigned tasks
+**Decision:** Stop treating Thesis 001 as a survivor awaiting sign-off. Pause the sign-off →
+paper-trade path. Follow [[plan/12-real-markets-plan]] instead: Phase 0 (fix the gate) and
+Phase 1 (long-history, no-hindsight and MTUM tests), then a human go/no-go gate (G1) with
+criteria written *before* the results. Each task is assigned a Claude model by difficulty:
+Fable 5.1 for method design and audits, Opus 5 for engine and money-adjacent code, Sonnet 5 for
+routine builds, Haiku 4.5 for mechanical work. Humans own every gate; agents never place orders.
+**Why:** a direct significance test of momentum's monthly extra return over EW-universe gave
+t = 0.34 on the 30-name core (won 48% of months; loses ex-NVDA). On the archived larger universe
+it gave t = 1.65, driven by PLUG/AMD/NIO (t = 0.72 without them). The old "PSR 1.00" gate
+measured P(Sharpe > 0), not P(beats EW), so it overstated the edge. See [[plan/02-verdict-log]]
+2026-09-13.
+**Also proposed (needs team decision):** replace "paper-trade 2+ weeks" with **≥3 monthly
+rebalances**. With monthly rebalancing, 2 weeks tests nothing.
+**Who:** Tenzing (directed Claude), 2026-09-13. Jonathan and Henry to review the G1 criteria.
+
 ### 2026-07-06 — Universe slimmed 97 → 30: quality over quantity, and the engine re-run live to prove it
 **Decision:** Cut the working universe (`realdata/`, `fetch_universe.py`) from ~97 liquid names
 down to a deliberately small, boring, diversified core of **30 megacaps across 6 sectors**

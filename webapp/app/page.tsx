@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   fetchTickers, fetchRun, pct, num,
-  type Results, type TickerInfo,
+  type Results, type TickerInfo, type Diagnostics,
 } from "@/lib/api";
 import { PriceChart, PositionStrip, EquityChart } from "@/components/Charts";
 import { TrackRecord } from "@/components/TrackRecord";
@@ -237,6 +237,10 @@ export default function Home() {
               )}
             </div>
 
+            {wf?.diagnostics && (
+              <RobustnessPanel d={wf.diagnostics} />
+            )}
+
             <div className="sm-card">
               <div className="sm-card-h">The one rule</div>
               <p className="muted" style={{ margin: 0, fontSize: 12, lineHeight: 1.5 }}>
@@ -258,6 +262,71 @@ export default function Home() {
         <code>walkforward.py</code>). No-lookahead is enforced in the engine
         (<code>positions.shift(1)</code>); the browser only displays what Python computed.
       </div>
+    </div>
+  );
+}
+
+function RobustnessPanel({ d }: { d: Diagnostics }) {
+  const dsrOk = d.deflated_sharpe != null && d.deflated_sharpe >= 0.95;
+  return (
+    <div className="sm-card">
+      <div className="sm-card-h">⑤ Robustness <span>edge, or best-of-{d.n_trials} luck?</span></div>
+      <div style={{ display: "flex", gap: 18, flexWrap: "wrap", fontSize: 12, marginBottom: 10 }}>
+        <span className="muted">
+          Deflated Sharpe:{" "}
+          <b className={dsrOk ? "good" : "bad"}>{num(d.deflated_sharpe)}</b>
+          {" "}<span style={{ fontSize: 11 }}>(≥0.95 = not just luck)</span>
+        </span>
+        <span className="muted">
+          Trades/fold: <b className={(d.trades_per_fold ?? 0) >= 30 ? "good" : "bad"}>{num(d.trades_per_fold, 0)}</b>
+        </span>
+      </div>
+
+      {d.regime_split && (
+        <p className="muted" style={{ margin: "0 0 10px", fontSize: 12 }}>
+          By this ticker&apos;s regime — up <b className="good">{pct(d.regime_split.up.return)}</b>,{" "}
+          down {pct(d.regime_split.down.return)},{" "}
+          chop <b className="bad">{pct(d.regime_split.chop.return)}</b>
+          {" "}<span style={{ fontSize: 11 }}>(a timing edge that only shows in one regime is fragile)</span>
+        </p>
+      )}
+
+      {d.per_year.length > 0 && (
+        <table>
+          <thead>
+            <tr><th>Year</th><th>OOS return</th><th>Sharpe</th><th>Bars</th></tr>
+          </thead>
+          <tbody>
+            {d.per_year.map((y) => (
+              <tr key={y.period} style={y.period === d.best_year ? { fontWeight: 600 } : undefined}>
+                <td>{y.period}{y.period === d.best_year ? " ★" : ""}</td>
+                <td className={(y.return ?? 0) >= 0 ? "good" : "bad"}>{pct(y.return)}</td>
+                <td>{num(y.sharpe)}</td>
+                <td>{y.bars}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {d.best_year_share != null && d.best_year_share > 0.6 && (
+        <p className="muted" style={{ margin: "6px 0 0", fontSize: 11.5 }}>
+          {(d.best_year_share * 100).toFixed(0)}% of the return came from {d.best_year} — a one-year wonder.
+        </p>
+      )}
+
+      {d.red_flags.length > 0 ? (
+        <div style={{
+          marginTop: 10, padding: "8px 10px", borderRadius: 6, fontSize: 11.5,
+          background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.25)",
+        }}>
+          <b className="bad">Red flag{d.red_flags.length > 1 ? "s" : ""}:</b>{" "}
+          {d.red_flags.join(" ")}
+        </div>
+      ) : (
+        <p className="muted" style={{ margin: "10px 0 0", fontSize: 11.5 }}>
+          No automated red flag fired — still not a green light. Absence of a flag is not proof of edge.
+        </p>
+      )}
     </div>
   );
 }

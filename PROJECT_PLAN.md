@@ -50,6 +50,7 @@ See [[plan/01-decision-log]] 2026-07-06.
 - [[plan/09-status-where-we-are]] — **living status tracker** (8-stage pipeline, current bottleneck). Read FIRST.
 - [[plan/10-verdict-and-diagnostics-spec]] — build spec: verdict auto-logger + robustness/red-flag diagnostics
 - [[plan/11-strategy-pipeline]] — **how we find/test/run/show strategies** (the merged scan→gate design)
+- [[plan/12-real-markets-plan]] — **what's missing for real markets** (2026-09-13): proof → paper plumbing → risk → taxes, each task assigned to a Claude model by difficulty, humans own the gates
 
 ### roles/ — who does what
 - [[roles/ROLE_Tenzing]] — engineering / the machine

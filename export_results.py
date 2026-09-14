@@ -27,6 +27,7 @@ from metrics import compute_metrics
 from strategies import (buy_and_hold, random_strategy, sma_crossover,
                         mean_reversion, kronos_signal)
 from walkforward import walk_forward
+from diagnostics import diagnose, config_sharpes
 from run import load_kronos_forecast
 
 SCHEMA_VERSION = 1
@@ -80,6 +81,21 @@ def trades_from_positions(pos, dates, px):
 
 def metrics_json(m):
     return {k: (None if (v != v) else round(float(v), 6)) for k, v in m.items()}
+
+
+def json_safe(v):
+    """Recursively round floats and turn NaN into None so nested diagnostics (per-year,
+    regime split, deflated Sharpe) serialize to valid JSON. Mirrors metrics_json for
+    the nested structures compute_metrics/diagnostics.py already produced."""
+    if isinstance(v, dict):
+        return {k: json_safe(x) for k, x in v.items()}
+    if isinstance(v, (list, tuple)):
+        return [json_safe(x) for x in v]
+    if hasattr(v, 'item'):                 # numpy scalar -> python scalar
+        v = v.item()
+    if isinstance(v, float):
+        return None if v != v else round(v, 6)
+    return v
 
 
 def fetch_yf(symbol, period='8y'):
@@ -206,23 +222,35 @@ def build_payload(df, name, source, dq, forecast=None, display_cost=None):
                for lb in (10, 20, 40) for z in (0.5, 1.0, 1.5, 2.0)]
     mr_factory = lambda p: (lambda prices: mean_reversion(prices, **p))
     combined, chosen = walk_forward(px, mr_factory, mr_grid, display_cm, n_folds=5)
+    # Robustness panel (5): deflated Sharpe (best-of-N discount), per-year, regime split
+    # (tagged by THIS ticker's own trend), and plain-English red flags. Same diagnostics.py
+    # the scan + verdict log consume, so the per-ticker view tells the identical story.
+    mr_diag = diagnose(combined, len(mr_grid), benchmark=px,
+                       trial_sharpes=config_sharpes(px, mean_reversion, mr_grid, display_cm),
+                       n_folds=5) if len(combined) else None
     result['walk_forward']['mean_reversion'] = {
         'regime': display_key,
         'oos_metrics': metrics_json(compute_metrics(combined)),
         'params_per_fold': [{'lookback': c['lookback'], 'entry_z': c['entry_z']} for c in chosen],
         'oos_equity': {'dates': [d.strftime('%Y-%m-%d') for d in combined.index],
                        'net': series((1 + combined['net']).cumprod(), 6)} if len(combined) else None,
+        'diagnostics': json_safe(mr_diag) if mr_diag else None,
     }
     if forecast is not None:
         kgrid = [{'threshold': th} for th in (0.0, 0.001, 0.003, 0.005, 0.01)]
         kfac = lambda p: (lambda prices: kronos_signal(prices, forecast=forecast, **p))
         kcomb, kchosen = walk_forward(px, kfac, kgrid, display_cm, n_folds=5)
+        # trial_sharpes=None: kronos_signal needs the cached forecast kwarg that the generic
+        # config_sharpes can't supply -- the DSR is still computed, just without the cross-trial
+        # variance discount (a small, conservative simplification for this rarely-run path).
+        kdiag = diagnose(kcomb, len(kgrid), benchmark=px, n_folds=5) if len(kcomb) else None
         result['walk_forward']['kronos'] = {
             'regime': display_key,
             'oos_metrics': metrics_json(compute_metrics(kcomb)),
             'params_per_fold': [{'threshold': c['threshold']} for c in kchosen],
             'oos_equity': {'dates': [d.strftime('%Y-%m-%d') for d in kcomb.index],
                            'net': series((1 + kcomb['net']).cumprod(), 6)} if len(kcomb) else None,
+            'diagnostics': json_safe(kdiag) if kdiag else None,
         }
     return result
 

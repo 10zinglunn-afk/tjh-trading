@@ -42,6 +42,24 @@ def load_verdicts(path=PATH):
         return [json.loads(line) for line in f if line.strip()]
 
 
+def scan_row_to_record(row, cost_regime="3/1 bps (liquid ETF)"):
+    """Map one scan.py result row (see scan.scan_universe) onto the verdict schema.
+    The logger stays a pure recorder: every field here already came out of metrics.py /
+    diagnostics.py inside the scan -- nothing is recomputed."""
+    m = row["metrics"]
+    return {
+        "ticker": row["ticker"], "strategy": row["strategy"],
+        "cost_regime": cost_regime, "run": "wide_scan",
+        "oos_total_return": m["total_return"], "oos_sharpe": m["sharpe"],
+        "oos_max_dd": m["max_drawdown"], "num_trades": m["num_trades"],
+        "buy_hold_return": row["bh_return"], "spy_return": row["spy_return"],
+        "beats_bh": bool(row["beats_bh"]),
+        "deflated_sharpe": row["dsr"], "trades_per_fold": row["trades_per_fold"],
+        "red_flags": row["red_flags"], "clean": bool(row["clean"]),
+        "synthetic": False,
+    }
+
+
 def _pct(v):
     return f"{v * 100:+.1f}%" if isinstance(v, (int, float)) and v == v else "--"
 
@@ -51,6 +69,16 @@ def render_markdown(records):
     deliberately blank: that column belongs to Henry, never the machine."""
     rows = [r for r in records if not r.get("synthetic")]
     rows.sort(key=lambda r: r.get("timestamp", ""), reverse=True)
+    # Keep only the newest verdict per (ticker, strategy, run, cost_regime) so re-running
+    # a scan refreshes the record instead of stacking duplicate rows.
+    seen, deduped = set(), []
+    for r in rows:
+        key = (r.get("ticker"), r.get("strategy"), r.get("run", "single"), r.get("cost_regime"))
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(r)
+    rows = deduped
     out = ["| Date | Strategy | Data | Cost regime | OOS net | OOS Sharpe | vs B&H | vs SPY | Flags | Judgment (Henry) |",
            "|------|----------|------|-------------|---------|-----------|--------|--------|-------|------------------|"]
     for r in rows:

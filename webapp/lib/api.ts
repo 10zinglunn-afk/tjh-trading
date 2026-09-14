@@ -31,11 +31,25 @@ export type StrategyResult = {
 
 export type CostRegime = { label: string; spread_bps: number; slippage_bps: number };
 
+export type PerYear = { period: string; return: number | null; sharpe: number | null; bars: number };
+
+export type Diagnostics = {
+  n_trials: number;
+  deflated_sharpe: number | null;
+  trades_per_fold: number | null;
+  per_year: PerYear[];
+  best_year: string | null;
+  best_year_share: number | null;
+  regime_split: Record<"up" | "down" | "chop", { return: number; bars: number }> | null;
+  red_flags: string[];
+};
+
 export type WalkForward = {
   regime: string;
   oos_metrics: Metrics;
   params_per_fold: Record<string, number>[];
   oos_equity: { dates: string[]; net: (number | null)[] } | null;
+  diagnostics: Diagnostics | null;
 };
 
 export type DataQuality = { level: string; code: string; message: string; rows?: number };
